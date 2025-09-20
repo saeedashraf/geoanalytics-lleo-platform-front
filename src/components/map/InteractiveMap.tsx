@@ -28,8 +28,10 @@ interface InteractiveMapProps {
 
 // Component to handle map events
 const MapEventHandler = ({ onAreaSelect }: { onAreaSelect: (area: AreaOfInterest) => void }) => {
-  useMapEvents({
-    draw_created: (e: any) => {
+  const map = useMapEvents({});
+
+  useEffect(() => {
+    const handleDrawCreated = (e: any) => {
       const { layer } = e;
       if (layer instanceof L.Rectangle) {
         const bounds = layer.getBounds();
@@ -39,10 +41,10 @@ const MapEventHandler = ({ onAreaSelect }: { onAreaSelect: (area: AreaOfInterest
           northeast_lat: bounds.getNorth(),
           northeast_lon: bounds.getEast(),
         };
-        
+
         const center = bounds.getCenter();
         const area_km2 = calculateAreaKm2(coordinates);
-        
+
         const areaOfInterest: AreaOfInterest = {
           coordinates,
           area_km2,
@@ -51,12 +53,18 @@ const MapEventHandler = ({ onAreaSelect }: { onAreaSelect: (area: AreaOfInterest
             lng: center.lng,
           },
         };
-        
+
         onAreaSelect(areaOfInterest);
       }
-    },
-  });
-  
+    };
+
+    map.on('draw:created', handleDrawCreated);
+
+    return () => {
+      map.off('draw:created', handleDrawCreated);
+    };
+  }, [map, onAreaSelect]);
+
   return null;
 };
 

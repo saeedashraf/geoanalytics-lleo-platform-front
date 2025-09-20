@@ -141,13 +141,18 @@ const AnalysisForm: React.FC<AnalysisFormProps> = ({ onAnalysisComplete }) => {
       };
 
       // Submit analysis
-      const results = await submitAnalysis(submissionData, credentialsFile, (progress, message) => {
-        setStatus({
-          status: 'processing',
-          progress,
-          message
-        });
-      });
+      const results = await submitAnalysis(
+        submissionData,
+        credentialsFile,
+        'default_user',
+        (progress, message) => {
+          setStatus({
+            status: 'processing',
+            progress,
+            message
+          });
+        }
+      );
 
       setStatus({
         status: 'completed',

@@ -2,7 +2,7 @@
 
 import { forwardRef } from 'react';
 import { ButtonProps } from '@/types/ui';
-import LoadingSpinner from './LoadingSpinner';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { cn } from '@/utils/cn';
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(

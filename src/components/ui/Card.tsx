@@ -10,6 +10,7 @@ interface CardProps {
   glass?: boolean;
   padding?: 'none' | 'sm' | 'md' | 'lg';
   variant?: 'default' | 'elevated' | 'outlined' | 'gradient';
+  onClick?: () => void;
 }
 
 const Card = forwardRef<HTMLDivElement, CardProps>(

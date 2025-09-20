@@ -226,7 +226,7 @@ const AnalysisCard: React.FC<AnalysisCardProps> = ({
                 size="sm"
                 className="transform scale-95 group-hover:scale-100 transition-all duration-200"
                 onClick={(e) => {
-                  e.stopPropagation();
+                  e?.stopPropagation();
                   handleView();
                 }}
               >

@@ -11,7 +11,7 @@ interface ButtonProps {
   loading?: boolean;
   fullWidth?: boolean;
   className?: string;
-  onClick?: () => void;
+  onClick?: (e?: React.MouseEvent<HTMLButtonElement>) => void;
   type?: 'button' | 'submit' | 'reset';
 }
 
@@ -99,9 +99,9 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       className
     );
     
-    const handleClick = () => {
+    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
       if (!disabled && !loading && onClick) {
-        onClick();
+        onClick(e);
       }
     };
     

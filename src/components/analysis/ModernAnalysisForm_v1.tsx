@@ -104,13 +104,18 @@ const ModernAnalysisForm: React.FC<ModernAnalysisFormProps> = ({ onAnalysisCompl
         download_data: formData.download_data,
       };
 
-      const results = await submitAnalysis(submissionData, credentialsFile, (progress, message) => {
-        setStatus({
-          status: 'processing',
-          progress,
-          message
-        });
-      });
+      const results = await submitAnalysis(
+        submissionData,
+        credentialsFile,
+        'default_user',
+        (progress, message) => {
+          setStatus({
+            status: 'processing',
+            progress,
+            message
+          });
+        }
+      );
 
       setStatus({
         status: 'completed',

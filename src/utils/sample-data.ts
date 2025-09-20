@@ -4,6 +4,7 @@ export const sampleAnalyses: AnalysisCard[] = [
   // Recently Published
   {
     id: '1',
+    session_id: 'sample_session_1',
     title: 'Amazon Rainforest Deforestation Analysis 2020-2024',
     description: 'Comprehensive NDVI analysis showing vegetation loss patterns in the Brazilian Amazon over the past 4 years.',
     query: 'What is the vegetation change from 2020 to 2024 in the Amazon rainforest?',
@@ -28,6 +29,7 @@ export const sampleAnalyses: AnalysisCard[] = [
   },
   {
     id: '2',
+    session_id: 'sample_session_2',
     title: 'Urban Green Space Expansion in Singapore',
     description: 'Analysis of urban vegetation growth and green infrastructure development in Singapore\'s city planning.',
     query: 'How has urban vegetation changed in Singapore from 2018 to 2024?',
@@ -52,6 +54,7 @@ export const sampleAnalyses: AnalysisCard[] = [
   },
   {
     id: '3',
+    session_id: 'sample_session_3',
     title: 'Alpine Vegetation Response to Climate Change',
     description: 'Swiss Alps vegetation monitoring showing upward migration of plant species due to warming temperatures.',
     query: 'What are the vegetation changes in the Swiss Alps from 2015 to 2024?',
@@ -76,6 +79,7 @@ export const sampleAnalyses: AnalysisCard[] = [
   },
   {
     id: '4',
+    session_id: 'sample_session_4',
     title: 'Sahel Green Belt Initiative Progress',
     description: 'Monitoring the Great Green Wall project\'s impact on vegetation recovery across the Sahel region.',
     query: 'What is the vegetation recovery progress in the Sahel from 2017 to 2024?',
@@ -102,6 +106,7 @@ export const sampleAnalyses: AnalysisCard[] = [
   // Community Research
   {
     id: '5',
+    session_id: 'sample_session_5',
     title: 'Global Mangrove Forest Health Assessment',
     description: 'Comprehensive analysis of mangrove ecosystems worldwide, tracking conservation efforts and climate impacts.',
     query: 'How have mangrove forests changed globally from 2015 to 2023?',
@@ -126,6 +131,7 @@ export const sampleAnalyses: AnalysisCard[] = [
   },
   {
     id: '6',
+    session_id: 'sample_session_6',
     title: 'Arctic Tundra Vegetation Shifts',
     description: 'Long-term study of Arctic vegetation changes due to permafrost thaw and temperature increases.',
     query: 'What are the vegetation changes in Arctic tundra from 2015 to 2024?',
@@ -150,6 +156,7 @@ export const sampleAnalyses: AnalysisCard[] = [
   },
   {
     id: '7',
+    session_id: 'sample_session_7',
     title: 'Mediterranean Drought Impact Study',
     description: 'Analysis of drought effects on Mediterranean vegetation and agricultural productivity.',
     query: 'How has drought affected vegetation in the Mediterranean from 2019 to 2024?',
@@ -174,6 +181,7 @@ export const sampleAnalyses: AnalysisCard[] = [
   },
   {
     id: '8',
+    session_id: 'sample_session_8',
     title: 'Tropical Peatland Conservation Monitoring',
     description: 'Tracking peatland restoration efforts in Southeast Asia and their impact on carbon sequestration.',
     query: 'What is the vegetation recovery in tropical peatlands from 2018 to 2024?',
@@ -200,6 +208,7 @@ export const sampleAnalyses: AnalysisCard[] = [
   // Enterprise Repository
   {
     id: '9',
+    session_id: 'sample_session_9',
     title: 'Corporate Forest Carbon Offset Verification',
     description: 'Internal analysis of company-owned forest lands for carbon credit verification and ESG reporting.',
     query: 'What is the forest growth in our carbon offset areas from 2020 to 2024?',
@@ -224,6 +233,7 @@ export const sampleAnalyses: AnalysisCard[] = [
   },
   {
     id: '10',
+    session_id: 'sample_session_10',
     title: 'Supply Chain Risk Assessment - Palm Oil',
     description: 'Monitoring deforestation risk in palm oil supply chain areas for sustainability compliance.',
     query: 'What are the deforestation patterns in our palm oil supply regions from 2019 to 2024?',
@@ -248,6 +258,7 @@ export const sampleAnalyses: AnalysisCard[] = [
   },
   {
     id: '11',
+    session_id: 'sample_session_11',
     title: 'Agricultural Investment Performance',
     description: 'Evaluation of vegetation health and productivity across company agricultural investments.',
     query: 'How productive are our agricultural investments from 2021 to 2024?',
@@ -272,6 +283,7 @@ export const sampleAnalyses: AnalysisCard[] = [
   },
   {
     id: '12',
+    session_id: 'sample_session_12',
     title: 'Renewable Energy Site Vegetation Impact',
     description: 'Assessment of vegetation changes around wind farm installations for environmental compliance.',
     query: 'What is the vegetation impact around our wind farms from 2018 to 2024?',
