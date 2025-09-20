@@ -237,21 +237,54 @@ export function convertFrontendCoordinates(frontendCoords: Coordinates): {
 }
 
 /**
+ * Extract analysis type from query
+ */
+function extractAnalysisType(query: string): string {
+  const lowerQuery = query.toLowerCase();
+
+  // Common analysis types
+  if (lowerQuery.includes('ndvi') || lowerQuery.includes('vegetation')) {
+    return 'NDVI analysis';
+  } else if (lowerQuery.includes('water quality') || lowerQuery.includes('water pollution')) {
+    return 'Water quality analysis';
+  } else if (lowerQuery.includes('air quality') || lowerQuery.includes('air pollution')) {
+    return 'Air quality analysis';
+  } else if (lowerQuery.includes('weather') || lowerQuery.includes('climate') || lowerQuery.includes('forecast')) {
+    return 'Weather analysis';
+  } else if (lowerQuery.includes('temperature') || lowerQuery.includes('thermal')) {
+    return 'Temperature analysis';
+  } else if (lowerQuery.includes('land use') || lowerQuery.includes('land cover')) {
+    return 'Land use analysis';
+  } else if (lowerQuery.includes('forest') || lowerQuery.includes('deforestation')) {
+    return 'Forest analysis';
+  } else if (lowerQuery.includes('urban') || lowerQuery.includes('city')) {
+    return 'Urban analysis';
+  } else if (lowerQuery.includes('agricultural') || lowerQuery.includes('crop')) {
+    return 'Agricultural analysis';
+  } else {
+    return 'Geospatial analysis';
+  }
+}
+
+/**
  * Convert gallery item to analysis card for display
  */
 export function galleryItemToAnalysisCard(item: GalleryItem, userId?: string): AnalysisCard {
   // Generate title from query (first 60 characters)
-  const title = item.query.length > 60 
-    ? item.query.substring(0, 57) + '...' 
+  const title = item.query.length > 60
+    ? item.query.substring(0, 57) + '...'
     : item.query;
-    
+
+  // Extract analysis type from query
+  const analysisType = extractAnalysisType(item.query);
+
   // Generate tags from location and query
   const tags: string[] = [];
   const locationWords = item.location_name.toLowerCase().split(/[\s,]+/);
   locationWords.forEach(word => {
     if (word.length > 2) tags.push(word);
   });
-  
+
   // Extract potential tags from query
   const queryWords = item.query.toLowerCase().match(/\b[a-z]{4,}\b/g) || [];
   queryWords.slice(0, 3).forEach(word => {
@@ -267,7 +300,7 @@ export function galleryItemToAnalysisCard(item: GalleryItem, userId?: string): A
   return {
     id: item.session_id,
     title,
-    description: `NDVI analysis for ${item.location_name} (${item.start_year}-${item.end_year})`,
+    description: `${analysisType} for ${item.location_name}${item.start_year && item.end_year ? ` (${item.start_year}-${item.end_year})` : ''}`,
     query: item.query,
     coordinates: {
       southwest_lat: 0, // Will need to fetch from metadata if needed
@@ -297,24 +330,36 @@ export function galleryItemToAnalysisCard(item: GalleryItem, userId?: string): A
 /**
  * Convert session analysis to analysis card for immediate display
  */
-export function sessionAnalysisToAnalysisCard(session: SessionAnalysis): AnalysisCard {
-  const title = session.analysis.location.name && session.analysis.start_year 
-    ? `${session.analysis.location.name} NDVI Analysis (${session.analysis.start_year}-${session.analysis.end_year})`
-    : 'NDVI Analysis';
+export function sessionAnalysisToAnalysisCard(session: SessionAnalysis, query?: string): AnalysisCard {
+  // Extract analysis type from query if available, otherwise use generic
+  const analysisType = query ? extractAnalysisType(query) : 'Geospatial analysis';
+
+  const title = session.analysis.location.name && session.analysis.start_year
+    ? `${session.analysis.location.name} Analysis (${session.analysis.start_year}-${session.analysis.end_year})`
+    : 'Geospatial Analysis';
 
   const coordinates = convertBackendCoordinates(session.analysis.location);
-  
-  const tags = [
-    'ndvi',
-    'vegetation',
+
+  // Generate tags based on query if available
+  const tags = ['geospatial', 'analysis'];
+  if (query) {
+    const queryWords = query.toLowerCase().match(/\b[a-z]{4,}\b/g) || [];
+    queryWords.slice(0, 2).forEach(word => {
+      if (!tags.includes(word) && word !== 'analysis') {
+        tags.push(word);
+      }
+    });
+  }
+
+  tags.push(
     session.analysis.location.name.toLowerCase().replace(/\s+/g, '-'),
     `${session.analysis.start_year}-${session.analysis.end_year}`
-  ];
+  );
 
   return {
     id: session.session_id,
     title,
-    description: `Vegetation analysis for ${session.analysis.location.name} from ${session.analysis.start_year} to ${session.analysis.end_year}`,
+    description: `${analysisType} for ${session.analysis.location.name}${session.analysis.start_year && session.analysis.end_year ? ` from ${session.analysis.start_year} to ${session.analysis.end_year}` : ''}`,
     query: 'Analysis in progress...',
     coordinates,
     location_name: session.analysis.location.name,
