@@ -122,7 +122,8 @@ export function getAnalysisChartUrl(sessionId: string): string {
  * Get download ZIP URL for an analysis
  */
 export function getAnalysisDownloadUrl(sessionId: string): string {
-  return `${API_BASE_URL}/results/${sessionId}/download`;
+  // Add timestamp to prevent caching issues that might cause intermittent failures
+  return `${API_BASE_URL}/results/${sessionId}/download?t=${Date.now()}`;
 }
 
 /**
@@ -166,43 +167,75 @@ export async function getAnalysisMetadata(sessionId: string): Promise<any> {
 }
 
 /**
- * Download analysis as ZIP file
+ * Download analysis as ZIP file with retry logic
  */
 export async function downloadAnalysisZip(sessionId: string): Promise<void> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/results/${sessionId}/download`);
-    
-    if (!response.ok) {
-      throw new Error(`Download failed: ${response.statusText}`);
-    }
-    
-    // Handle ZIP file download
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    
-    // Extract filename from Content-Disposition header or use default
-    const contentDisposition = response.headers.get('content-disposition');
-    let filename = `ndvi_analysis_${sessionId}.zip`;
-    if (contentDisposition) {
-      const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
-      if (filenameMatch) {
-        filename = filenameMatch[1];
+  const maxRetries = 2;
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      // Add timestamp to prevent caching issues
+      const downloadUrl = `${API_BASE_URL}/results/${sessionId}/download?t=${Date.now()}`;
+
+      const response = await fetch(downloadUrl, {
+        method: 'GET',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.status} ${response.statusText}`);
+      }
+
+      // Handle ZIP file download
+      const blob = await response.blob();
+
+      // Verify we got a proper file
+      if (blob.size === 0) {
+        throw new Error('Downloaded file is empty');
+      }
+
+      const url = window.URL.createObjectURL(blob);
+
+      // Extract filename from Content-Disposition header or use default
+      const contentDisposition = response.headers.get('content-disposition');
+      let filename = `ndvi_analysis_${sessionId}.zip`;
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+
+      // Trigger download
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      return; // Success - exit the retry loop
+
+    } catch (error) {
+      lastError = error as Error;
+      console.warn(`Download attempt ${attempt + 1} failed:`, error);
+
+      // If this isn't the last attempt, wait before retrying
+      if (attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1))); // Progressive delay
       }
     }
-
-    // Trigger download
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-    
-  } catch (error) {
-    console.error('Download failed:', error);
-    throw error;
   }
+
+  // If we get here, all attempts failed
+  console.error('All download attempts failed:', lastError);
+  throw lastError || new Error('Download failed after multiple attempts');
 }
 
 /**

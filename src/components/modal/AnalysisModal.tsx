@@ -494,9 +494,9 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
                     
                     <Button
                       variant="outline"
-                      onClick={() => analysis.chart_url && window.open(analysis.chart_url, '_blank')}
+                      onClick={() => analysis.session_id && window.open(getAnalysisChartUrl(analysis.session_id), '_blank')}
                       className="flex items-center justify-center space-x-2"
-                      disabled={!analysis.chart_url}
+                      disabled={!analysis.session_id}
                     >
                       <BarChart3 className="w-5 h-5" />
                       <span>View Charts</span>
