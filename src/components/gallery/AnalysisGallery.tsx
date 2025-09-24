@@ -213,11 +213,11 @@ const AnalysisGallery: React.FC<AnalysisGalleryProps> = ({
     return (
       <div className={cn('space-y-6', className)}>
         <Card className="text-center py-16">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
+          <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-amber-500 rounded-full flex items-center justify-center mx-auto mb-6">
             <LoadingSpinner size="lg" className="text-white" />
           </div>
-          <h3 className="text-xl font-bold text-slate-900 mb-2">Loading Your Analyses</h3>
-          <p className="text-slate-600">Fetching your NDVI analysis history...</p>
+          <h3 className="text-xl font-bold text-black mb-2">Loading Your Analyses</h3>
+          <p className="text-gray-600">Fetching your NDVI analysis history...</p>
         </Card>
       </div>
     );
@@ -229,7 +229,7 @@ const AnalysisGallery: React.FC<AnalysisGalleryProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <div className="flex items-center space-x-3 mb-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+            <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-amber-500 rounded-xl flex items-center justify-center shadow-lg">
               <BarChart3 className="w-5 h-5 text-white" />
             </div>
             <h2 className="text-3xl font-bold text-slate-900">{title}</h2>
@@ -240,7 +240,7 @@ const AnalysisGallery: React.FC<AnalysisGalleryProps> = ({
           <div className="flex items-center space-x-4 text-sm text-slate-500">
             <span>{filteredAndSortedAnalyses.length} of {analyses.length} analyses</span>
             {filteredAndSortedAnalyses.length !== analyses.length && (
-              <span className="text-blue-600 font-medium">• Filtered</span>
+              <span className="text-green-600 font-medium">• Filtered</span>
             )}
           </div>
         </div>
@@ -273,7 +273,7 @@ const AnalysisGallery: React.FC<AnalysisGalleryProps> = ({
                   placeholder="Search analyses, locations, authors, or tags..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 backdrop-blur-sm"
+                  className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white/80 backdrop-blur-sm"
                 />
               </div>
             </div>
@@ -285,7 +285,7 @@ const AnalysisGallery: React.FC<AnalysisGalleryProps> = ({
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as SortOption)}
-                  className="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[140px]"
+                  className="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 min-w-[140px]"
                 >
                   <option value="newest">Newest First</option>
                   <option value="oldest">Oldest First</option>
@@ -304,8 +304,8 @@ const AnalysisGallery: React.FC<AnalysisGalleryProps> = ({
                   onClick={() => setViewMode('grid')}
                   className={cn(
                     'p-3 transition-colors',
-                    viewMode === 'grid' 
-                      ? 'bg-blue-500 text-white' 
+                    viewMode === 'grid'
+                      ? 'bg-green-500 text-white'
                       : 'bg-white text-slate-600 hover:bg-slate-50'
                   )}
                 >
@@ -315,8 +315,8 @@ const AnalysisGallery: React.FC<AnalysisGalleryProps> = ({
                   onClick={() => setViewMode('list')}
                   className={cn(
                     'p-3 transition-colors',
-                    viewMode === 'list' 
-                      ? 'bg-blue-500 text-white' 
+                    viewMode === 'list'
+                      ? 'bg-green-500 text-white'
                       : 'bg-white text-slate-600 hover:bg-slate-50'
                   )}
                 >
@@ -347,7 +347,7 @@ const AnalysisGallery: React.FC<AnalysisGalleryProps> = ({
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h4 className="font-semibold text-slate-900 flex items-center">
-                    <Sparkles className="w-4 h-4 mr-2 text-blue-500" />
+                    <Sparkles className="w-4 h-4 mr-2 text-green-500" />
                     Filter by Tags
                   </h4>
                   {(selectedTags.length > 0 || searchQuery) && (
@@ -370,8 +370,8 @@ const AnalysisGallery: React.FC<AnalysisGalleryProps> = ({
                         className={cn(
                           'px-3 py-2 text-sm rounded-xl border transition-all duration-200 hover:scale-105',
                           selectedTags.includes(tag)
-                            ? 'bg-blue-500 text-white border-blue-500 shadow-lg'
-                            : 'bg-white text-slate-700 border-slate-200 hover:border-blue-300 hover:text-blue-600'
+                            ? 'bg-green-500 text-white border-green-500 shadow-lg'
+                            : 'bg-white text-slate-700 border-slate-200 hover:border-green-300 hover:text-green-600'
                         )}
                       >
                         #{tag}
@@ -465,7 +465,7 @@ const AnalysisGallery: React.FC<AnalysisGalleryProps> = ({
 
           {/* Load more hint (for future pagination) */}
           {filteredAndSortedAnalyses.length >= 20 && (
-            <Card className="text-center py-8 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+            <Card className="text-center py-8 bg-gradient-to-r from-green-50 to-amber-50 border-green-200">
               <p className="text-slate-600 mb-4">
                 Showing {filteredAndSortedAnalyses.length} analyses
               </p>

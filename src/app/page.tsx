@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { 
-  Satellite, 
-  Globe, 
-  Zap, 
-  ArrowRight, 
+import { useSearchParams } from 'next/navigation';
+import {
+  Satellite,
+  Globe,
+  Zap,
+  ArrowRight,
   CheckCircle,
   Star,
   Users,
@@ -44,22 +45,26 @@ import Footer from '@/components/layout/Footer';
 import AnalysisGallery from '@/components/gallery/AnalysisGallery';
 import AnalysisModal from '@/components/modal/AnalysisModal';
 import ModernAnalysisForm from '@/components/analysis/ModernAnalysisForm';
+import ChatInterface from '@/components/chat/ChatInterface';
+import ExamplePrompts from '@/components/chat/ExamplePrompts';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import { 
-  checkApiHealth, 
-  getUserGallery, 
+import {
+  checkApiHealth,
+  getUserGallery,
   submitAnalysis,
   getUserId,
   downloadAnalysisZip,
   openAnalysisMap,
   getAnalysisPreviewUrl,
   getAnalysisChartUrl,
-  fixThumbnailUrl
+  fixThumbnailUrl,
+  keepGCPWarm,
+  formatApiError
 } from '@/utils/api';
-import { 
-  AnalysisCard, 
-  AnalysisStatus, 
+import {
+  AnalysisCard,
+  AnalysisStatus,
   SessionAnalysis,
   GalleryItem,
   galleryItemToAnalysisCard,
@@ -72,7 +77,7 @@ export default function HomePage() {
   // State management
   const [activeTab, setActiveTab] = useState<'create' | 'my-analyses' | 'community' | 'pricing'>('create');
   const [userId, setUserId] = useState<string>('');
-  
+
   // Gallery state
   const [userAnalyses, setUserAnalyses] = useState<AnalysisCard[]>([]);
   const [communityAnalyses, setCommunityAnalyses] = useState<AnalysisCard[]>(sampleAnalyses);
@@ -81,13 +86,24 @@ export default function HomePage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [apiHealth, setApiHealth] = useState<any>(null);
 
+  // Chat interface state
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [currentInput, setCurrentInput] = useState<string>('');
+
   // Hooks
   const { toasts, showToast, hideToast } = useToast();
+  const searchParams = useSearchParams();
 
-  // Initialize user ID on client side only
+  // Initialize user ID and handle URL tab parameter
   useEffect(() => {
     setUserId(getUserId());
-  }, []);
+
+    // Check for tab parameter in URL
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['my-analyses', 'community', 'pricing'].includes(tabParam)) {
+      setActiveTab(tabParam as 'my-analyses' | 'community' | 'pricing');
+    }
+  }, [searchParams]);
 
   // Check API health on component mount
   useEffect(() => {
@@ -95,7 +111,7 @@ export default function HomePage() {
       try {
         const response = await checkApiHealth();
         setApiHealth(response);
-        
+
         if (response.status === 'healthy') {
           showToast({
             type: 'success',
@@ -118,6 +134,22 @@ export default function HomePage() {
 
     checkApiHealthStatus();
   }, [showToast]);
+
+  // Keep GCP instance warm to prevent cold starts
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const isWarm = await keepGCPWarm();
+        if (!isWarm && apiHealth?.status === 'healthy') {
+          console.warn('GCP instance may be cooling down');
+        }
+      } catch (error) {
+        console.warn('Keep-warm ping failed:', error);
+      }
+    }, 4 * 60 * 1000); // Ping every 4 minutes
+
+    return () => clearInterval(interval);
+  }, [apiHealth]);
 
   // Load user's analyses when switching to "My Analyses" tab
   useEffect(() => {
@@ -143,11 +175,12 @@ export default function HomePage() {
       setUserAnalyses(analysisCards);
     } catch (error) {
       console.error('Failed to load user analyses:', error);
+      const errorMessage = formatApiError(error);
       showToast({
         type: 'error',
         title: 'Failed to Load Analyses',
-        message: 'Could not load your analysis history',
-        duration: 5000
+        message: errorMessage,
+        duration: 8000
       });
       setUserAnalyses([]);
     } finally {
@@ -239,7 +272,7 @@ export default function HomePage() {
       });
 
       await downloadAnalysisZip(analysis.session_id);
-      
+
       showToast({
         type: 'success',
         title: 'Download Complete!',
@@ -252,6 +285,58 @@ export default function HomePage() {
         message: 'Could not download analysis files'
       });
     }
+  };
+
+  // Chat interface handlers
+  const handleChatSubmit = async (query: string, credentialsFile?: File) => {
+    if (isAnalyzing || !credentialsFile) return;
+
+    setIsAnalyzing(true);
+    setCurrentInput(query);
+
+    try {
+      showToast({
+        type: 'info',
+        title: 'Analysis Started',
+        message: 'Processing your geospatial query...',
+        duration: 5000
+      });
+
+      const sessionData = await submitAnalysis(
+        { query, download_data: true },
+        credentialsFile,
+        userId,
+        (progress, message) => {
+          // Progress updates could be shown in toast or UI
+          console.log(`Progress: ${progress}% - ${message}`);
+        }
+      );
+
+      // Convert to analysis card and trigger the same flow
+      handleAnalysisComplete(sessionData);
+
+    } catch (error) {
+      console.error('Chat analysis failed:', error);
+
+      // Use improved error formatting
+      const errorMessage = formatApiError(error);
+      const isTimeout = errorMessage.includes('timed out') || errorMessage.includes('GCP may be processing');
+
+      showToast({
+        type: isTimeout ? 'warning' : 'error',
+        title: isTimeout ? 'Processing Takes Time' : 'Analysis Failed',
+        message: errorMessage,
+        duration: isTimeout ? 12000 : 8000
+      });
+    } finally {
+      setIsAnalyzing(false);
+      setCurrentInput('');
+    }
+  };
+
+  const handleExamplePromptClick = (prompt: string) => {
+    setCurrentInput(prompt);
+    // You could auto-focus the input here if needed
   };
 
   // Hero section for create tab
@@ -362,9 +447,9 @@ export default function HomePage() {
         </Card>
 
         {/* Pro Plan */}
-        <Card className="text-center relative border-2 border-blue-500" padding="lg">
+        <Card className="text-center relative border-2 border-green-500" padding="lg">
           <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-            <span className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-semibold">
+            <span className="bg-gradient-to-r from-green-400 to-amber-500 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
               Most Popular
             </span>
           </div>
@@ -372,9 +457,10 @@ export default function HomePage() {
           <div className="mb-8">
             <h3 className="text-2xl font-bold text-slate-900 mb-2">Professional</h3>
             <div className="text-4xl font-bold text-slate-900 mb-2">
-              $19<span className="text-xl text-slate-600">/month</span>
+              $29<span className="text-xl text-slate-600">/month</span>
             </div>
             <p className="text-slate-600">For professional researchers</p>
+            <p className="text-sm text-slate-500 mt-1">$39/month if billed monthly</p>
           </div>
           
           <ul className="space-y-4 mb-8 text-left">
@@ -400,7 +486,11 @@ export default function HomePage() {
             </li>
           </ul>
           
-          <Button variant="primary" fullWidth>
+          <Button
+            variant="primary"
+            fullWidth
+            className="!bg-gradient-to-r !from-green-500 !to-green-500 hover:!from-green-600 hover:!to-green-600"
+          >
             Start Pro Trial
           </Button>
         </Card>
@@ -451,48 +541,84 @@ export default function HomePage() {
     switch (activeTab) {
       case 'create':
         return (
-          <div>
-            {renderHeroSection()}
-            <div className="mt-[80vh] py-32" id="analysis-form">
-              <div className="container mx-auto px-6">
-                <ModernAnalysisForm onAnalysisComplete={handleAnalysisComplete} />
+          <div className="min-h-screen flex flex-col">
+            {/* Main Hero Section with GeoLLM Branding */}
+            <div className="flex-1 flex flex-col justify-center items-center px-6 py-20">
+              <div className="text-center max-w-4xl mx-auto mb-16">
+                {/* LLEO Logo/Title */}
+                <div className="flex items-center justify-center space-x-4 mb-6">
+                  <div className="w-16 h-16 bg-gradient-to-r from-green-400 to-amber-500 rounded-2xl flex items-center justify-center">
+                    <Satellite className="w-8 h-8 text-white" />
+                  </div>
+                  <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-green-500 to-amber-500 bg-clip-text text-transparent">
+                    LLEO
+                  </h1>
+                </div>
+
+                {/* Subtitle */}
+                <p className="text-xl md:text-2xl text-black mb-4 font-medium">
+                  Large Language Models for Earth Observation
+                </p>
+                <p className="text-lg text-gray-800 max-w-2xl mx-auto mb-12">
+                  Transform questions into comprehensive geospatial insights using advanced AI and satellite imagery.
+                  Powered by Google Earth Engine.
+                </p>
+
+                {/* Main Chat Interface */}
+                <div className="mb-16">
+                  <ChatInterface
+                    onSubmit={handleChatSubmit}
+                    loading={isAnalyzing}
+                  />
+                </div>
+              </div>
+
+              {/* Example Prompts */}
+              <div className="w-full max-w-6xl mx-auto">
+                <ExamplePrompts
+                  onPromptClick={handleExamplePromptClick}
+                  disabled={isAnalyzing}
+                />
               </div>
             </div>
-            <div id="resources" className="container mx-auto px-6 py-16">
-              <div className="text-center mb-16">
-                <h2 className="text-4xl font-bold text-slate-900 mb-4">Resources & Documentation</h2>
-                <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-                  Everything you need to get started with geospatial analysis and make the most of our platform.
-                </p>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-                <Card className="text-center p-8 hover:shadow-xl transition-shadow">
-                  <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                    <Globe className="w-8 h-8 text-white" />
+
+            {/* Resources Section (smaller/simplified) */}
+            <div className="bg-gradient-to-r from-green-100/50 to-amber-100/50 backdrop-blur-sm py-16">
+              <div className="container mx-auto px-6">
+                <div className="text-center mb-12">
+                  <h2 className="text-3xl font-bold text-black mb-4">
+                    Powered by Advanced Technology
+                  </h2>
+                  <p className="text-gray-800 max-w-2xl mx-auto">
+                    Built on Google Earth Engine with state-of-the-art AI models for comprehensive geospatial analysis.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-gradient-to-r from-green-400 to-amber-500 rounded-xl flex items-center justify-center mx-auto mb-4">
+                      <Brain className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-black mb-2">AI-Powered</h3>
+                    <p className="text-sm text-gray-800">Advanced machine learning models for intelligent analysis</p>
                   </div>
-                  <h3 className="text-xl font-bold text-slate-900 mb-4">Getting Started</h3>
-                  <p className="text-slate-600 mb-6">Learn the basics of NDVI analysis and how to interpret satellite imagery results.</p>
-                  <Button variant="outline" size="sm">View Guide</Button>
-                </Card>
-                
-                <Card className="text-center p-8 hover:shadow-xl transition-shadow">
-                  <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                    <Database className="w-8 h-8 text-white" />
+
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-gradient-to-r from-green-400 to-amber-500 rounded-xl flex items-center justify-center mx-auto mb-4">
+                      <Globe className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-black mb-2">Global Coverage</h3>
+                    <p className="text-sm text-gray-800">Worldwide satellite imagery and data access</p>
                   </div>
-                  <h3 className="text-xl font-bold text-slate-900 mb-4">API Reference</h3>
-                  <p className="text-slate-600 mb-6">Technical documentation for developers and researchers integrating with our platform.</p>
-                  <Button variant="outline" size="sm">View Docs</Button>
-                </Card>
-                
-                <Card className="text-center p-8 hover:shadow-xl transition-shadow">
-                  <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                    <Users className="w-8 h-8 text-white" />
+
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-gradient-to-r from-green-400 to-amber-500 rounded-xl flex items-center justify-center mx-auto mb-4">
+                      <Share2 className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-black mb-2">Research Sharing</h3>
+                    <p className="text-sm text-gray-800">Collaborate and share insights with the community</p>
                   </div>
-                  <h3 className="text-xl font-bold text-slate-900 mb-4">Community</h3>
-                  <p className="text-slate-600 mb-6">Connect with other researchers and share insights from your analyses.</p>
-                  <Button variant="outline" size="sm">Join Community</Button>
-                </Card>
+                </div>
               </div>
             </div>
           </div>
@@ -536,9 +662,9 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-amber-50 to-orange-50">
       {/* Header */}
-      <Header 
+      <Header
         activeTab={activeTab}
         onTabChange={(tab) => setActiveTab(tab as any)}
       />

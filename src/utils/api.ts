@@ -3,8 +3,43 @@ import { AnalysisQuery, AnalysisResults, GalleryItem, SessionAnalysis } from '@/
 // API configuration - MUST BE FIRST!
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+// Configuration based on environment
+const isGCP = API_BASE_URL.includes('run.app');
+const API_TIMEOUT = 600000; // 10 minutes for both GCP and local
+const MAX_RETRIES = isGCP ? 3 : 1;
+
 interface ProgressCallback {
   (progress: number, message: string): void;
+}
+
+// Utility function for retrying API calls
+async function fetchWithRetry<T>(
+  apiCall: () => Promise<T>,
+  maxRetries: number = MAX_RETRIES
+): Promise<T> {
+  const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await apiCall();
+    } catch (error) {
+      const isLastAttempt = attempt === maxRetries;
+      const isRetryableError = error.message.includes('fetch') ||
+                              error.message.includes('timeout') ||
+                              error.message.includes('network') ||
+                              (error.message.includes('HTTP 5') && !error.message.includes('HTTP 404'));
+
+      if (isLastAttempt || !isRetryableError) {
+        throw error;
+      }
+
+      const delay = Math.pow(2, attempt) * 1000; // Exponential backoff: 1s, 2s, 4s
+      console.warn(`API call failed (attempt ${attempt + 1}), retrying in ${delay}ms...`, error.message);
+      await sleep(delay);
+    }
+  }
+
+  throw new Error('This should never be reached');
 }
 
 // ===== NEW SESSION-BASED ANALYSIS =====
@@ -31,35 +66,101 @@ export async function submitAnalysis(
 
     onProgress?.(20, 'Sending to AI-powered backend...');
 
-    // Submit to enhanced backend
-    const response = await fetch(`${API_BASE_URL}/analyze`, {
-      method: 'POST',
-      body: formData,
-    });
+    // Create abort controller for timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, API_TIMEOUT);
 
-    onProgress?.(40, 'Processing with Google Earth Engine...');
+    try {
+      // Submit to enhanced backend with timeout
+      console.log('Submitting request to:', `${API_BASE_URL}/analyze`);
+      console.log('Request details:', {
+        method: 'POST',
+        hasCredentialsFile: !!credentialsFile,
+        query: data.query.substring(0, 100),
+        userId: userId,
+        timeout: API_TIMEOUT
+      });
 
-    if (!response.ok) {
-      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-      
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData.detail || errorMessage;
-      } catch {
-        // If response is not JSON, use status text
+      const response = await fetch(`${API_BASE_URL}/analyze`, {
+        method: 'POST',
+        body: formData,
+        signal: controller.signal,
+        // Add explicit headers that might help with CORS/network issues
+        headers: {
+          'Accept': 'application/json',
+          // Don't set Content-Type for FormData - browser sets it automatically with boundary
+        },
+        // For GCP, we might need credentials
+        credentials: isGCP ? 'omit' : 'same-origin'
+      });
+
+      console.log('Response received:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries()),
+        url: response.url
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.detail || errorMessage;
+        } catch {
+          // If response is not JSON, use status text
+        }
+
+        throw new Error(errorMessage);
       }
-      
-      throw new Error(errorMessage);
+
+      onProgress?.(80, 'Analysis complete, preparing results...');
+
+      // Parse JSON response with session information
+      let sessionData: SessionAnalysis;
+      try {
+        const responseText = await response.text();
+        console.log('Raw response from GCP:', responseText.substring(0, 500)); // Log first 500 chars
+        sessionData = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('JSON parsing failed:', parseError);
+        console.error('Response headers:', Object.fromEntries(response.headers.entries()));
+        throw new Error('Invalid response format from server. The analysis may have completed but the response is malformed.');
+      }
+
+      onProgress?.(100, 'Analysis ready!');
+
+      return sessionData;
+
+    } catch (error) {
+      clearTimeout(timeoutId);
+
+      // Log the full error for debugging
+      console.error('Fetch error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
+
+      if (error.name === 'AbortError') {
+        throw new Error('Analysis timed out. GCP may be processing a large request - please try again.');
+      }
+
+      // More specific error handling
+      if (error.message.includes('Failed to fetch')) {
+        throw new Error('Network connection failed. Please check your internet connection and try again.');
+      }
+
+      if (error.message.includes('NetworkError')) {
+        throw new Error('Network error occurred. This may be due to CORS or connectivity issues.');
+      }
+
+      throw error;
     }
-
-    onProgress?.(80, 'Analysis complete, preparing results...');
-
-    // Parse JSON response with session information
-    const sessionData: SessionAnalysis = await response.json();
-    
-    onProgress?.(100, 'Analysis ready!');
-    
-    return sessionData;
 
   } catch (error) {
     console.error('Analysis submission failed:', error);
@@ -77,22 +178,34 @@ export async function getUserGallery(
   limit: number = 50,
   offset: number = 0
 ): Promise<GalleryItem[]> {
-  try {
+  return fetchWithRetry(async () => {
     const url = new URL(`${API_BASE_URL}/gallery/${encodeURIComponent(userId)}`);
     url.searchParams.set('limit', limit.toString());
     url.searchParams.set('offset', offset.toString());
 
-    const response = await fetch(url.toString());
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch gallery: ${response.statusText}`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
+
+    try {
+      const response = await fetch(url.toString(), {
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch gallery: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        throw new Error('Gallery request timed out');
+      }
+      throw error;
     }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('Gallery fetch failed:', error);
-    throw error;
-  }
+  });
 }
 
 // ===== INDIVIDUAL FILE ACCESS =====
@@ -280,13 +393,27 @@ export async function checkApiHealth(): Promise<{
   gemini_model_initialized: boolean;
   project_id?: string;
 }> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s for health check
+
   try {
-    const response = await fetch(`${API_BASE_URL}/health`);
+    const response = await fetch(`${API_BASE_URL}/health`, {
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
     if (!response.ok) {
       throw new Error(`Health check failed: ${response.statusText}`);
     }
     return await response.json();
   } catch (error) {
+    clearTimeout(timeoutId);
+
+    if (error.name === 'AbortError') {
+      throw new Error('Health check timed out');
+    }
+
     console.error('Health check failed:', error);
     throw error;
   }
@@ -349,27 +476,57 @@ export function validateCredentialsFile(file: File): { valid: boolean; error?: s
  */
 export function formatApiError(error: unknown): string {
   if (error instanceof Error) {
+    // Handle timeout errors
+    if (error.message.includes('timed out') || error.message.includes('AbortError')) {
+      return isGCP
+        ? 'Request timed out. GCP may be processing a complex analysis - this is normal for the first request. Please try again.'
+        : 'Request timed out. Please check your connection and try again.';
+    }
+
     // Handle common HTTP errors
     if (error.message.includes('Failed to fetch')) {
       return 'Unable to connect to the analysis server. Please check your internet connection and try again.';
     }
-    
+
     if (error.message.includes('HTTP 422')) {
       return 'Invalid request data. Please check your inputs and try again.';
     }
-    
+
     if (error.message.includes('HTTP 413')) {
       return 'File too large. Please use a smaller credentials file.';
     }
-    
+
     if (error.message.includes('HTTP 500')) {
       return 'Server error occurred during analysis. Please try again later.';
     }
-    
+
     return error.message;
   }
-  
+
   return 'An unexpected error occurred. Please try again.';
+}
+
+/**
+ * Keep GCP instance warm by pinging health endpoint
+ */
+export async function keepGCPWarm(): Promise<boolean> {
+  if (!isGCP) return true; // No need for local backend
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // Short timeout for keep-alive
+
+    const response = await fetch(`${API_BASE_URL}/health`, {
+      method: 'GET',
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+    return response.ok;
+  } catch (error) {
+    console.warn('Keep-alive ping failed:', error.message);
+    return false;
+  }
 }
 
 // ===== USER MANAGEMENT =====

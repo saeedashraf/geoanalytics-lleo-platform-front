@@ -92,9 +92,9 @@ const AnalysisCard: React.FC<AnalysisCardProps> = ({
   const getCategoryColor = () => {
     switch (analysis.category) {
       case 'community_research':
-        return 'text-blue-600 bg-blue-100';
+        return 'text-green-600 bg-green-100';
       case 'enterprise_repository':
-        return 'text-purple-600 bg-purple-100';
+        return 'text-green-600 bg-green-100';
       case 'recently_published':
         return 'text-green-600 bg-green-100';
       case 'user_analyses':
@@ -127,12 +127,12 @@ const AnalysisCard: React.FC<AnalysisCardProps> = ({
       onClick={handleView}
     >
       {/* Thumbnail */}
-      <div className="relative h-48 bg-gradient-to-br from-slate-100 to-blue-100 overflow-hidden">
+      <div className="relative h-48 bg-gradient-to-br from-slate-100 to-green-100 overflow-hidden">
         {analysis.thumbnail_url ? (
           <>
             {imageLoading && (
               <div className="absolute inset-0 flex items-center justify-center bg-slate-100">
-                <div className="animate-spin w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                <div className="animate-spin w-6 h-6 border-2 border-green-500 border-t-transparent rounded-full"></div>
               </div>
             )}
             
@@ -159,7 +159,7 @@ const AnalysisCard: React.FC<AnalysisCardProps> = ({
           </>
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-3 shadow-lg">
+            <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-amber-500 rounded-full flex items-center justify-center mb-3 shadow-lg">
               <MapPin className="w-8 h-8 text-white" />
             </div>
             <p className="text-slate-600 font-medium">{analysis.location_name}</p>
@@ -245,7 +245,7 @@ const AnalysisCard: React.FC<AnalysisCardProps> = ({
       <div className="p-4 space-y-4">
         {/* Title and menu */}
         <div className="flex items-start justify-between">
-          <h3 className="font-bold text-slate-900 line-clamp-2 flex-1 pr-2 group-hover:text-blue-600 transition-colors leading-tight">
+          <h3 className="font-bold text-slate-900 line-clamp-2 flex-1 pr-2 group-hover:text-green-600 transition-colors leading-tight">
             {analysis.title}
           </h3>
           <div className="relative">
@@ -318,12 +318,12 @@ const AnalysisCard: React.FC<AnalysisCardProps> = ({
 
         {/* Query Preview */}
         {analysis.query && (
-          <div className="p-2 bg-blue-50 rounded-lg border border-blue-200/50">
-            <p className="text-xs text-blue-800 font-medium mb-1 flex items-center">
+          <div className="p-2 bg-green-50 rounded-lg border border-green-200/50">
+            <p className="text-xs text-green-800 font-medium mb-1 flex items-center">
               <Sparkles className="w-3 h-3 mr-1" />
               Research Query
             </p>
-            <p className="text-xs text-blue-700 line-clamp-2 italic">
+            <p className="text-xs text-green-700 line-clamp-2 italic">
               "{analysis.query}"
             </p>
           </div>
@@ -410,7 +410,7 @@ const AnalysisCard: React.FC<AnalysisCardProps> = ({
       </div>
 
       {/* Hover effect overlay */}
-      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 via-amber-500/5 to-green-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
     </Card>
   );
 };

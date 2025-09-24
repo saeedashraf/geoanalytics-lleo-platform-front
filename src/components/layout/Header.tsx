@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  User, 
-  HelpCircle, 
-  Globe, 
+import { useRouter } from 'next/navigation';
+import {
+  User,
+  HelpCircle,
+  Globe,
   ChevronDown,
   Menu,
   X,
@@ -30,6 +31,7 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [userId, setUserId] = useState<string>('');
+  const router = useRouter();
 
   // Initialize user ID on client side only
   useEffect(() => {
@@ -38,31 +40,37 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
 
   // Simplified navigation - only core features
   const navigationItems = [
-    { 
-      id: 'my-analyses', 
-      label: 'My Analyses', 
+    {
+      id: 'my-analyses',
+      label: 'My Analyses',
       icon: History,
       description: 'Your analysis history',
-      color: 'from-green-500 to-teal-600'
+      color: 'from-green-400 to-amber-500'
     },
-    { 
-      id: 'community', 
-      label: 'Community Research', 
+    {
+      id: 'community',
+      label: 'Community Research',
       icon: Globe,
       description: 'Shared scientific repository',
-      color: 'from-purple-500 to-pink-600'
+      color: 'from-green-400 to-amber-500'
     },
-    { 
-      id: 'pricing', 
-      label: 'Pricing', 
+    {
+      id: 'pricing',
+      label: 'Pricing',
       icon: DollarSign,
       description: 'Plans and pricing',
-      color: 'from-orange-500 to-red-600'
+      color: 'from-green-400 to-amber-500'
     },
   ];
 
   const handleTabClick = (tabId: string) => {
-    onTabChange?.(tabId);
+    if (onTabChange) {
+      // If we have onTabChange, use it (on main page)
+      onTabChange(tabId);
+    } else {
+      // Otherwise, navigate to home page and trigger tab change
+      router.push(`/?tab=${tabId}`);
+    }
     setIsMobileMenuOpen(false);
   };
 
@@ -78,16 +86,16 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
   return (
     <header className="relative">
       {/* Main header */}
-      <div className="bg-white/80 backdrop-blur-xl border-b border-white/20 sticky top-0 z-40">
+      <div className="bg-gradient-to-r from-green-600/90 to-amber-600/90 backdrop-blur-xl border-b border-amber-500/50 sticky top-0 z-40">
         <div className="container mx-auto px-6">
           <div className="flex items-center justify-between h-16">
             {/* Logo and brand */}
             <div className="flex items-center space-x-4">
-              <div className="bg-gray-100 rounded-full px-4 py-2 flex items-center space-x-3 cursor-pointer" onClick={() => handleTabClick('create')}>
-                <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+              <div className="bg-gradient-to-r from-green-400/20 to-amber-400/20 rounded-full px-4 py-2 flex items-center space-x-3 cursor-pointer" onClick={() => handleTabClick('create')}>
+                <div className="w-6 h-6 bg-gradient-to-r from-green-400 to-amber-500 rounded-full flex items-center justify-center">
                   <Satellite className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-slate-900 font-semibold">GeoAnalytics</span>
+                <span className="text-white font-semibold">LLEO</span>
               </div>
             </div>
 
@@ -101,8 +109,8 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
                   <button
                     key={item.id}
                     onClick={() => handleTabClick(item.id)}
-                    className={`text-slate-700 hover:text-slate-900 transition-colors duration-200 font-medium ${
-                      isActive ? 'text-slate-900' : ''
+                    className={`text-green-200 hover:text-white transition-colors duration-200 font-medium ${
+                      isActive ? 'text-white' : ''
                     }`}
                   >
                     {item.label}
@@ -114,30 +122,20 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
             {/* Right side actions */}
             <div className="flex items-center space-x-4">
               {/* Globe Icon */}
-              <button className="p-2 text-slate-600 hover:text-slate-900 transition-colors">
+              <button className="p-2 text-green-200 hover:text-white transition-colors">
                 <Globe className="w-5 h-5" />
               </button>
-
-              {/* Start Building button */}
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => handleTabClick('create')}
-                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium"
-              >
-                Start Building
-              </Button>
 
               {/* Profile dropdown */}
               <div className="relative">
                 <button
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className="flex items-center space-x-2 p-2 rounded-lg hover:bg-slate-100 transition-colors"
+                  className="flex items-center space-x-2 p-2 rounded-lg hover:bg-green-700 transition-colors"
                 >
-                  <div className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center">
-                    <User className="w-4 h-4 text-slate-600" />
+                  <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
+                    <User className="w-4 h-4 text-white" />
                   </div>
-                  <ChevronDown className={`w-4 h-4 text-slate-600 transition-transform duration-200 ${
+                  <ChevronDown className={`w-4 h-4 text-green-200 transition-transform duration-200 ${
                     isProfileOpen ? 'rotate-180' : ''
                   }`} />
                 </button>

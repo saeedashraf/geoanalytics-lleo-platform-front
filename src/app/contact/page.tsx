@@ -1,22 +1,28 @@
 'use client';
 
 import { useState } from 'react';
-import { 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Globe, 
-  Users, 
-  Award, 
+import {
+  Mail,
+  Phone,
+  MapPin,
+  Globe,
+  Users,
+  Award,
   Zap,
   ArrowLeft,
   Send,
   Building,
   Lightbulb,
-  Shield
+  Shield,
+  MessageSquare,
+  HelpCircle,
+  Bug,
+  Clock
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
+import Header from '@/components/layout/Header';
+import Footer from '@/components/layout/Footer';
 import Link from 'next/link';
 
 export default function ContactPage() {
@@ -24,217 +30,280 @@ export default function ContactPage() {
     name: '',
     email: '',
     subject: '',
+    category: 'general',
     message: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData(prev => ({
-      ...prev,
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    setFormData({
+      ...formData,
       [e.target.name]: e.target.value
-    }));
+    });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission here
-    console.log('Form submitted:', formData);
-    alert('Thank you for your message! We\'ll get back to you soon.');
+    setIsSubmitting(true);
+
+    // Simulate form submission
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    setIsSubmitted(true);
+    setIsSubmitting(false);
+    setFormData({ name: '', email: '', subject: '', category: 'general', message: '' });
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
-      {/* Header */}
-      <div className="bg-white/80 backdrop-blur-xl border-b border-white/20 sticky top-0 z-40">
-        <div className="container mx-auto px-6 py-4">
-          <Link 
-            href="/"
-            className="inline-flex items-center space-x-2 text-slate-600 hover:text-slate-900 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to Home</span>
-          </Link>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-amber-50 to-orange-50">
+      <Header />
 
-      <div className="container mx-auto px-6 py-16">
-        {/* Hero Section */}
-        <div className="text-center mb-16">
-          <h1 className="text-5xl font-bold text-slate-900 mb-6">
-            Get in Touch
-          </h1>
-          <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-            Have questions about our geospatial analysis platform? Want to learn more about our AI-powered satellite imagery insights? We'd love to hear from you.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-          {/* Contact Form */}
-          <div>
-            <Card className="p-8">
-              <h2 className="text-2xl font-bold text-slate-900 mb-6">Send us a Message</h2>
-              
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-2">
-                      Full Name
-                    </label>
-                    <input
-                      type="text"
-                      id="name"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                      placeholder="Your full name"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">
-                      Email Address
-                    </label>
-                    <input
-                      type="email"
-                      id="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                      placeholder="your.email@example.com"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="subject" className="block text-sm font-medium text-slate-700 mb-2">
-                    Subject
-                  </label>
-                  <input
-                    type="text"
-                    id="subject"
-                    name="subject"
-                    value={formData.subject}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                    placeholder="What's this about?"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="message" className="block text-sm font-medium text-slate-700 mb-2">
-                    Message
-                  </label>
-                  <textarea
-                    id="message"
-                    name="message"
-                    value={formData.message}
-                    onChange={handleInputChange}
-                    required
-                    rows={5}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
-                    placeholder="Tell us more about your inquiry..."
-                  />
-                </div>
-
-                <Button type="submit" variant="primary" size="lg" fullWidth>
-                  <Send className="w-5 h-5 mr-2" />
-                  Send Message
-                </Button>
-              </form>
-            </Card>
+      <main className="container mx-auto px-6 py-16">
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-16">
+            <div className="flex items-center justify-center space-x-3 mb-6">
+              <div className="w-12 h-12 bg-gradient-to-r from-green-400 to-amber-500 rounded-xl flex items-center justify-center">
+                <MessageSquare className="w-6 h-6 text-white" />
+              </div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-amber-600 bg-clip-text text-transparent">
+                Contact Us
+              </h1>
+            </div>
+            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+              Have questions about LLEO? Need help with your earth observation analysis? We're here to help!
+            </p>
           </div>
 
-          {/* Contact Info & About */}
-          <div className="space-y-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
             {/* Contact Information */}
-            <Card className="p-8">
-              <h2 className="text-2xl font-bold text-slate-900 mb-6">Contact Information</h2>
-              
-              <div className="space-y-6">
+            <div className="lg:col-span-1 space-y-8">
+              {/* Contact Cards */}
+              <Card className="p-6 bg-white/70 backdrop-blur-sm">
                 <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Mail className="w-6 h-6 text-white" />
+                  <div className="w-10 h-10 bg-gradient-to-r from-green-400 to-amber-500 rounded-lg flex items-center justify-center">
+                    <Mail className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900">Email</h3>
-                    <p className="text-slate-600">contact@geoanalytics.com</p>
-                    <p className="text-sm text-slate-500">We typically respond within 24 hours</p>
+                    <h3 className="font-semibold text-black mb-1">Email Support</h3>
+                    <p className="text-gray-600 text-sm mb-2">Get help with technical issues</p>
+                    <a href="mailto:support@lleo.ai" className="text-green-600 hover:text-green-700 font-medium">
+                      support@lleo.ai
+                    </a>
                   </div>
                 </div>
+              </Card>
 
+              <Card className="p-6 bg-white/70 backdrop-blur-sm">
                 <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-teal-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Globe className="w-6 h-6 text-white" />
+                  <div className="w-10 h-10 bg-gradient-to-r from-green-400 to-amber-500 rounded-lg flex items-center justify-center">
+                    <HelpCircle className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900">Website</h3>
-                    <p className="text-slate-600">geoanalytics.com</p>
-                    <p className="text-sm text-slate-500">Visit our platform to explore features</p>
+                    <h3 className="font-semibold text-black mb-1">General Inquiries</h3>
+                    <p className="text-gray-600 text-sm mb-2">Questions about our platform</p>
+                    <a href="mailto:hello@lleo.ai" className="text-green-600 hover:text-green-700 font-medium">
+                      hello@lleo.ai
+                    </a>
                   </div>
                 </div>
+              </Card>
 
+              <Card className="p-6 bg-white/70 backdrop-blur-sm">
                 <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Building className="w-6 h-6 text-white" />
+                  <div className="w-10 h-10 bg-gradient-to-r from-green-400 to-amber-500 rounded-lg flex items-center justify-center">
+                    <Clock className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900">Office</h3>
-                    <p className="text-slate-600">San Francisco, CA</p>
-                    <p className="text-sm text-slate-500">Remote-first company</p>
+                    <h3 className="font-semibold text-black mb-1">Response Times</h3>
+                    <div className="text-gray-600 text-sm space-y-1">
+                      <p>General: 24-48 hours</p>
+                      <p>Technical: 4-8 hours</p>
+                      <p>Urgent: 1-2 hours</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Card>
+              </Card>
+            </div>
 
-            {/* About Section */}
-            <Card className="p-8">
-              <h2 className="text-2xl font-bold text-slate-900 mb-6">About GeoAnalytics</h2>
-              
-              <div className="space-y-6">
-                <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Lightbulb className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-slate-900">Our Mission</h3>
-                    <p className="text-slate-600 text-sm">
-                      To democratize access to advanced geospatial analysis, making satellite imagery insights accessible to researchers, farmers, and environmentalists worldwide.
+            {/* Contact Form */}
+            <div className="lg:col-span-2">
+              <Card className="p-8 bg-white/70 backdrop-blur-sm">
+                {isSubmitted ? (
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <Send className="w-8 h-8 text-green-600" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-black mb-4">Message Sent!</h3>
+                    <p className="text-gray-600 mb-6">
+                      Thank you for contacting us. We'll get back to you as soon as possible.
                     </p>
+                    <Button
+                      onClick={() => setIsSubmitted(false)}
+                      className="!bg-gradient-to-r !from-green-500 !to-green-500 hover:!from-green-600 hover:!to-green-600"
+                    >
+                      Send Another Message
+                    </Button>
                   </div>
-                </div>
+                ) : (
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <h2 className="text-2xl font-bold text-black mb-6">Send us a Message</h2>
 
-                <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Zap className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-slate-900">AI-Powered</h3>
-                    <p className="text-slate-600 text-sm">
-                      Leveraging cutting-edge machine learning to analyze satellite data and provide actionable insights in minutes, not days.
-                    </p>
-                  </div>
-                </div>
+                    {/* Name & Email Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label htmlFor="name" className="block text-sm font-medium text-black mb-2">
+                          Full Name *
+                        </label>
+                        <input
+                          type="text"
+                          id="name"
+                          name="name"
+                          required
+                          value={formData.name}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                          placeholder="Your name"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="email" className="block text-sm font-medium text-black mb-2">
+                          Email Address *
+                        </label>
+                        <input
+                          type="email"
+                          id="email"
+                          name="email"
+                          required
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                          placeholder="your.email@example.com"
+                        />
+                      </div>
+                    </div>
 
-                <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Shield className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-slate-900">Trusted Platform</h3>
-                    <p className="text-slate-600 text-sm">
-                      Used by 400K+ researchers and professionals worldwide for critical environmental and agricultural analysis.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </Card>
+                    {/* Category */}
+                    <div>
+                      <label htmlFor="category" className="block text-sm font-medium text-black mb-2">
+                        Category
+                      </label>
+                      <select
+                        id="category"
+                        name="category"
+                        value={formData.category}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                      >
+                        <option value="general">General Inquiry</option>
+                        <option value="technical">Technical Support</option>
+                        <option value="billing">Billing & Subscriptions</option>
+                        <option value="partnership">Partnerships</option>
+                        <option value="bug">Bug Report</option>
+                        <option value="feature">Feature Request</option>
+                      </select>
+                    </div>
+
+                    {/* Subject */}
+                    <div>
+                      <label htmlFor="subject" className="block text-sm font-medium text-black mb-2">
+                        Subject *
+                      </label>
+                      <input
+                        type="text"
+                        id="subject"
+                        name="subject"
+                        required
+                        value={formData.subject}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                        placeholder="Brief description of your inquiry"
+                      />
+                    </div>
+
+                    {/* Message */}
+                    <div>
+                      <label htmlFor="message" className="block text-sm font-medium text-black mb-2">
+                        Message *
+                      </label>
+                      <textarea
+                        id="message"
+                        name="message"
+                        required
+                        rows={6}
+                        value={formData.message}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all resize-vertical"
+                        placeholder="Please provide details about your inquiry..."
+                      />
+                    </div>
+
+                    {/* Submit Button */}
+                    <Button
+                      type="submit"
+                      loading={isSubmitting}
+                      className="w-full md:w-auto !bg-gradient-to-r !from-green-500 !to-green-500 hover:!from-green-600 hover:!to-green-600"
+                      disabled={isSubmitting}
+                    >
+                      <Send className="w-4 h-4 mr-2" />
+                      {isSubmitting ? 'Sending...' : 'Send Message'}
+                    </Button>
+                  </form>
+                )}
+              </Card>
+            </div>
+          </div>
+
+          {/* FAQ Section */}
+          <div className="mt-16">
+            <h2 className="text-3xl font-bold text-center text-black mb-8">
+              Frequently Asked Questions
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <Card className="p-6 bg-white/70 backdrop-blur-sm">
+                <h3 className="font-semibold text-black mb-3">How do I get started with LLEO?</h3>
+                <p className="text-gray-600 text-sm">
+                  Simply create an account, upload your Google Earth Engine credentials, and start making geospatial analysis queries through our AI-powered interface.
+                </p>
+              </Card>
+
+              <Card className="p-6 bg-white/70 backdrop-blur-sm">
+                <h3 className="font-semibold text-black mb-3">What data sources does LLEO use?</h3>
+                <p className="text-gray-600 text-sm">
+                  LLEO primarily uses Google Earth Engine's extensive satellite imagery database, including Landsat, Sentinel, and MODIS data for comprehensive earth observation analysis.
+                </p>
+              </Card>
+
+              <Card className="p-6 bg-white/70 backdrop-blur-sm">
+                <h3 className="font-semibold text-black mb-3">Can I share my analysis results?</h3>
+                <p className="text-gray-600 text-sm">
+                  Yes! LLEO includes a community research platform where you can share your findings with other researchers and access publicly shared analyses.
+                </p>
+              </Card>
+
+              <Card className="p-6 bg-white/70 backdrop-blur-sm">
+                <h3 className="font-semibold text-black mb-3">Is there a free trial?</h3>
+                <p className="text-gray-600 text-sm">
+                  We offer a free research tier with 5 analyses per month. Professional users can start with a free trial of our premium features.
+                </p>
+              </Card>
+            </div>
+          </div>
+
+          {/* Back to Home */}
+          <div className="text-center mt-12">
+            <Link
+              href="/"
+              className="inline-flex items-center space-x-2 text-green-600 hover:text-green-700 font-medium"
+            >
+              ← Back to LLEO
+            </Link>
           </div>
         </div>
-      </div>
+      </main>
+
+      <Footer />
     </div>
   );
 } 
