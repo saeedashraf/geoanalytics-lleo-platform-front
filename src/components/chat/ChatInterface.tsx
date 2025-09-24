@@ -16,14 +16,28 @@ interface ChatInterfaceProps {
   onSubmit: (query: string, file?: File) => void;
   loading?: boolean;
   onStopGeneration?: () => void;
+  initialValue?: string; // For setting value from example prompts
+  onInputChange?: (value: string) => void; // To sync with parent state
 }
 
-export default function ChatInterface({ onSubmit, loading = false, onStopGeneration }: ChatInterfaceProps) {
-  const [input, setInput] = useState('');
+export default function ChatInterface({ onSubmit, loading = false, onStopGeneration, initialValue = '', onInputChange }: ChatInterfaceProps) {
+  const [input, setInput] = useState(initialValue);
   const [credentialsFile, setCredentialsFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync with parent state when initialValue changes
+  useEffect(() => {
+    if (initialValue !== input) {
+      setInput(initialValue);
+      // Auto-resize textarea after setting value
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+        textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+      }
+    }
+  }, [initialValue]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +45,7 @@ export default function ChatInterface({ onSubmit, loading = false, onStopGenerat
 
     onSubmit(input.trim(), credentialsFile || undefined);
     setInput('');
+    onInputChange?.(''); // Clear parent state too
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -148,7 +163,10 @@ export default function ChatInterface({ onSubmit, loading = false, onStopGenerat
           <textarea
             ref={textareaRef}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              onInputChange?.(e.target.value);
+            }}
             onKeyDown={handleKeyDown}
             placeholder="Describe your geospatial analysis request..."
             className="w-full px-6 py-4 pr-16 bg-transparent border-none outline-none resize-none text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 text-lg leading-relaxed min-h-[60px] max-h-[200px]"

@@ -337,7 +337,23 @@ function HomePageContent() {
 
   const handleExamplePromptClick = (prompt: string) => {
     setCurrentInput(prompt);
-    // You could auto-focus the input here if needed
+
+    // Auto-scroll to chat interface and focus
+    setTimeout(() => {
+      const chatElement = document.querySelector('textarea');
+      if (chatElement) {
+        chatElement.focus();
+        chatElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
+
+    // Show toast feedback
+    showToast({
+      type: 'info',
+      title: 'Example Selected',
+      message: 'Example prompt added to input. Upload your credentials and submit!',
+      duration: 3000
+    });
   };
 
   // Hero section for create tab
@@ -570,6 +586,8 @@ function HomePageContent() {
                   <ChatInterface
                     onSubmit={handleChatSubmit}
                     loading={isAnalyzing}
+                    initialValue={currentInput}
+                    onInputChange={setCurrentInput}
                   />
                 </div>
               </div>
