@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   Satellite,
@@ -73,7 +73,8 @@ import {
 import { sampleAnalyses } from '@/utils/sample-data';
 import useToast from '@/hooks/useToast';
 
-export default function HomePage() {
+// Component that uses searchParams - needs to be wrapped in Suspense
+function HomePageContent() {
   // State management
   const [activeTab, setActiveTab] = useState<'create' | 'my-analyses' | 'community' | 'pricing'>('create');
   const [userId, setUserId] = useState<string>('');
@@ -756,5 +757,14 @@ export default function HomePage() {
         }
       `}</style>
     </div>
+  );
+}
+
+// Main export with Suspense boundary for useSearchParams
+export default function HomePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-green-50 via-amber-50 to-orange-50 flex items-center justify-center">Loading...</div>}>
+      <HomePageContent />
+    </Suspense>
   );
 }

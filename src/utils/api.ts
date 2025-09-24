@@ -22,18 +22,18 @@ async function fetchWithRetry<T>(
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       return await apiCall();
-    } catch (error) {
+    } catch (err: unknown) {
       const isLastAttempt = attempt === maxRetries;
 
       // Type-safe error message extraction
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage = err instanceof Error ? err.message : String(err);
       const isRetryableError = errorMessage.includes('fetch') ||
                               errorMessage.includes('timeout') ||
                               errorMessage.includes('network') ||
                               (errorMessage.includes('HTTP 5') && !errorMessage.includes('HTTP 404'));
 
       if (isLastAttempt || !isRetryableError) {
-        throw error;
+        throw err;
       }
 
       const delay = Math.pow(2, attempt) * 1000; // Exponential backoff: 1s, 2s, 4s
