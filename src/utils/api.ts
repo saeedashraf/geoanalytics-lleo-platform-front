@@ -24,17 +24,20 @@ async function fetchWithRetry<T>(
       return await apiCall();
     } catch (error) {
       const isLastAttempt = attempt === maxRetries;
-      const isRetryableError = error.message.includes('fetch') ||
-                              error.message.includes('timeout') ||
-                              error.message.includes('network') ||
-                              (error.message.includes('HTTP 5') && !error.message.includes('HTTP 404'));
+
+      // Type-safe error message extraction
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const isRetryableError = errorMessage.includes('fetch') ||
+                              errorMessage.includes('timeout') ||
+                              errorMessage.includes('network') ||
+                              (errorMessage.includes('HTTP 5') && !errorMessage.includes('HTTP 404'));
 
       if (isLastAttempt || !isRetryableError) {
         throw error;
       }
 
       const delay = Math.pow(2, attempt) * 1000; // Exponential backoff: 1s, 2s, 4s
-      console.warn(`API call failed (attempt ${attempt + 1}), retrying in ${delay}ms...`, error.message);
+      console.warn(`API call failed (attempt ${attempt + 1}), retrying in ${delay}ms...`, errorMessage);
       await sleep(delay);
     }
   }
@@ -139,24 +142,28 @@ export async function submitAnalysis(
     } catch (error) {
       clearTimeout(timeoutId);
 
-      // Log the full error for debugging
-      console.error('Fetch error details:', {
-        name: error.name,
-        message: error.message,
-        stack: error.stack
-      });
+      // Log the full error for debugging (type-safe)
+      if (error instanceof Error) {
+        console.error('Fetch error details:', {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        });
 
-      if (error.name === 'AbortError') {
-        throw new Error('Analysis timed out. GCP may be processing a large request - please try again.');
-      }
+        if (error.name === 'AbortError') {
+          throw new Error('Analysis timed out. GCP may be processing a large request - please try again.');
+        }
 
-      // More specific error handling
-      if (error.message.includes('Failed to fetch')) {
-        throw new Error('Network connection failed. Please check your internet connection and try again.');
-      }
+        // More specific error handling
+        if (error.message.includes('Failed to fetch')) {
+          throw new Error('Network connection failed. Please check your internet connection and try again.');
+        }
 
-      if (error.message.includes('NetworkError')) {
-        throw new Error('Network error occurred. This may be due to CORS or connectivity issues.');
+        if (error.message.includes('NetworkError')) {
+          throw new Error('Network error occurred. This may be due to CORS or connectivity issues.');
+        }
+      } else {
+        console.error('Unknown error type:', error);
       }
 
       throw error;
@@ -200,7 +207,7 @@ export async function getUserGallery(
       return await response.json();
     } catch (error) {
       clearTimeout(timeoutId);
-      if (error.name === 'AbortError') {
+      if (error instanceof Error && error.name === 'AbortError') {
         throw new Error('Gallery request timed out');
       }
       throw error;
@@ -410,7 +417,7 @@ export async function checkApiHealth(): Promise<{
   } catch (error) {
     clearTimeout(timeoutId);
 
-    if (error.name === 'AbortError') {
+    if (error instanceof Error && error.name === 'AbortError') {
       throw new Error('Health check timed out');
     }
 
@@ -477,7 +484,7 @@ export function validateCredentialsFile(file: File): { valid: boolean; error?: s
 export function formatApiError(error: unknown): string {
   if (error instanceof Error) {
     // Handle timeout errors
-    if (error.message.includes('timed out') || error.message.includes('AbortError')) {
+    if (error.message.includes('timed out') || error.name === 'AbortError') {
       return isGCP
         ? 'Request timed out. GCP may be processing a complex analysis - this is normal for the first request. Please try again.'
         : 'Request timed out. Please check your connection and try again.';
@@ -503,6 +510,14 @@ export function formatApiError(error: unknown): string {
     return error.message;
   }
 
+  // Handle non-Error objects
+  const errorMessage = String(error);
+  if (errorMessage.includes('timed out') || errorMessage.includes('AbortError')) {
+    return isGCP
+      ? 'Request timed out. GCP may be processing a complex analysis - this is normal for the first request. Please try again.'
+      : 'Request timed out. Please check your connection and try again.';
+  }
+
   return 'An unexpected error occurred. Please try again.';
 }
 
@@ -524,7 +539,8 @@ export async function keepGCPWarm(): Promise<boolean> {
     clearTimeout(timeoutId);
     return response.ok;
   } catch (error) {
-    console.warn('Keep-alive ping failed:', error.message);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.warn('Keep-alive ping failed:', errorMessage);
     return false;
   }
 }
