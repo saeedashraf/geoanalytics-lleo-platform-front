@@ -122,7 +122,7 @@ const Footer: React.FC = () => {
               variant="primary"
               size="sm"
               onClick={handleContactClick}
-              className="mt-4 w-full !bg-[#43978D] hover:!bg-[#264D59] !bg-gradient-to-r !from-[#43978D] !to-[#43978D] hover:!from-[#264D59] hover:!to-[#264D59]">
+              className="mt-4 w-full !bg-[#43978D] hover:!bg-[#264D59] !bg-gradient-to-r !from-[#43978D] !to-[#43978D] hover:!from-[#264D59] hover:!to-[#264D59]"
             >
               Contact Us
             </Button>
