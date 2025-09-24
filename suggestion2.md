@@ -1,7 +1,18 @@
-# Supabase Authentication Integration Suggestion
+# Complete Supabase Authentication Integration Guide for LLEO
 
 ## Overview
-This document outlines how to integrate Supabase authentication into your LLEO frontend to provide persistent user sessions and analysis history. This will replace the current localStorage-based user ID system with proper authentication.
+This comprehensive guide outlines the complete integration of Supabase authentication into your LLEO (Large Language Models for Earth Observation) platform. This will transform your current localStorage-based system into a professional, secure authentication system with persistent user sessions, cross-device access, and proper user management.
+
+## Table of Contents
+1. [Current vs. Proposed Architecture](#current-vs-proposed-architecture)
+2. [Supabase Project Setup](#supabase-project-setup)
+3. [Database Schema Design](#database-schema-design)
+4. [Frontend Implementation](#frontend-implementation)
+5. [Backend Integration](#backend-integration)
+6. [Security Considerations](#security-considerations)
+7. [Deployment Strategy](#deployment-strategy)
+8. [Migration Plan](#migration-plan)
+9. [Advanced Features](#advanced-features)
 
 ## Current State vs. Proposed State
 
@@ -540,37 +551,447 @@ export default function AuthGuard({ children, fallback }: AuthGuardProps) {
 
 ### 8. Backend API Updates
 
-Your backend should be updated to handle authenticated requests:
+Your FastAPI backend requires comprehensive updates to support Supabase authentication:
+
+#### Install Backend Dependencies
+
+```bash
+pip install supabase python-jose[cryptography] passlib[bcrypt]
+```
+
+#### Backend Environment Configuration
+
+```env
+# Add to your .env file
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key  # For admin operations
+SUPABASE_ANON_KEY=your_supabase_anon_key
+JWT_SECRET=your_jwt_secret  # From Supabase project settings
+```
+
+#### Supabase Client Setup for Backend
+
+Create `backend/utils/supabase_client.py`:
+```python
+import os
+from supabase import create_client, Client
+from typing import Optional
+
+# Supabase client for backend operations
+supabase_url: str = os.getenv("SUPABASE_URL")
+supabase_service_key: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY")  # Admin access
+supabase_anon_key: str = os.getenv("SUPABASE_ANON_KEY")
+
+# Admin client for server-side operations
+supabase_admin: Client = create_client(supabase_url, supabase_service_key)
+
+# Regular client for user operations
+supabase_client: Client = create_client(supabase_url, supabase_anon_key)
+```
+
+#### Authentication Middleware
+
+Create `backend/middleware/auth.py`:
+```python
+from fastapi import HTTPException, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from jose import JWTError, jwt
+import os
+from typing import Optional
+from utils.supabase_client import supabase_client
+
+security = HTTPBearer()
+JWT_SECRET = os.getenv("JWT_SECRET")
+JWT_ALGORITHM = "HS256"
+
+class User:
+    def __init__(self, id: str, email: str, user_metadata: dict = None):
+        self.id = id
+        self.email = email
+        self.user_metadata = user_metadata or {}
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> User:
+    """
+    Verify JWT token and return current user
+    """
+    try:
+        # Verify the token with Supabase
+        response = supabase_client.auth.get_user(credentials.credentials)
+
+        if response.user:
+            return User(
+                id=response.user.id,
+                email=response.user.email,
+                user_metadata=response.user.user_metadata
+            )
+        else:
+            raise HTTPException(status_code=401, detail="Invalid authentication token")
+
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Could not validate credentials: {str(e)}")
+
+async def get_optional_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False))) -> Optional[User]:
+    """
+    Optional authentication - returns User if authenticated, None otherwise
+    """
+    if not credentials:
+        return None
+
+    try:
+        return await get_current_user(credentials)
+    except HTTPException:
+        return None
+```
+
+#### Database Models with Supabase Integration
+
+Create `backend/models/analysis.py`:
+```python
+from datetime import datetime
+from typing import Optional, List, Dict, Any
+from utils.supabase_client import supabase_admin
+import uuid
+
+class AnalysisModel:
+    @staticmethod
+    async def create_analysis(
+        user_id: str,
+        user_email: str,
+        query: str,
+        session_id: str,
+        analysis_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Create new analysis record in Supabase"""
+        analysis_record = {
+            "session_id": session_id,
+            "user_id": user_id,
+            "user_email": user_email,
+            "query": query,
+            "analysis_data": analysis_data,
+            "created_at": datetime.utcnow().isoformat(),
+            "status": "completed",
+            "is_public": False  # Private by default
+        }
+
+        result = supabase_admin.table("analyses").insert(analysis_record).execute()
+        return result.data[0] if result.data else None
+
+    @staticmethod
+    async def get_user_analyses(user_id: str, limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
+        """Get analyses for a specific user"""
+        result = supabase_admin.table("analyses") \
+            .select("*") \
+            .eq("user_id", user_id) \
+            .order("created_at", desc=True) \
+            .limit(limit) \
+            .offset(offset) \
+            .execute()
+
+        return result.data or []
+
+    @staticmethod
+    async def get_public_analyses(limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
+        """Get public analyses for community gallery"""
+        result = supabase_admin.table("analyses") \
+            .select("*") \
+            .eq("is_public", True) \
+            .order("created_at", desc=True) \
+            .limit(limit) \
+            .offset(offset) \
+            .execute()
+
+        return result.data or []
+
+    @staticmethod
+    async def get_analysis_by_session_id(session_id: str, user_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """Get specific analysis by session ID"""
+        query = supabase_admin.table("analyses").select("*").eq("session_id", session_id)
+
+        # If user_id provided, ensure they own the analysis or it's public
+        if user_id:
+            query = query.or_(f"user_id.eq.{user_id},is_public.eq.true")
+        else:
+            query = query.eq("is_public", True)
+
+        result = query.execute()
+        return result.data[0] if result.data else None
+
+    @staticmethod
+    async def update_analysis_visibility(session_id: str, user_id: str, is_public: bool) -> bool:
+        """Update analysis visibility (public/private)"""
+        result = supabase_admin.table("analyses") \
+            .update({"is_public": is_public}) \
+            .eq("session_id", session_id) \
+            .eq("user_id", user_id) \
+            .execute()
+
+        return len(result.data) > 0
+
+    @staticmethod
+    async def delete_analysis(session_id: str, user_id: str) -> bool:
+        """Delete analysis (user must own it)"""
+        result = supabase_admin.table("analyses") \
+            .delete() \
+            .eq("session_id", session_id) \
+            .eq("user_id", user_id) \
+            .execute()
+
+        return len(result.data) > 0
+```
+
+#### Required Database Schema (Supabase SQL)
+
+Execute this SQL in your Supabase SQL editor:
+
+```sql
+-- Create analyses table
+CREATE TABLE analyses (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    session_id TEXT UNIQUE NOT NULL,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    user_email TEXT NOT NULL,
+    query TEXT NOT NULL,
+    analysis_data JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    status TEXT DEFAULT 'processing',
+    is_public BOOLEAN DEFAULT false,
+    location_name TEXT,
+    analysis_type TEXT,
+    thumbnail_url TEXT,
+    download_url TEXT
+);
+
+-- Enable RLS
+ALTER TABLE analyses ENABLE ROW LEVEL SECURITY;
+
+-- Policies for analyses table
+-- Users can view their own analyses
+CREATE POLICY "Users can view own analyses" ON analyses
+    FOR SELECT USING (auth.uid() = user_id);
+
+-- Users can view public analyses
+CREATE POLICY "Anyone can view public analyses" ON analyses
+    FOR SELECT USING (is_public = true);
+
+-- Users can insert their own analyses
+CREATE POLICY "Users can create analyses" ON analyses
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Users can update their own analyses
+CREATE POLICY "Users can update own analyses" ON analyses
+    FOR UPDATE USING (auth.uid() = user_id);
+
+-- Users can delete their own analyses
+CREATE POLICY "Users can delete own analyses" ON analyses
+    FOR DELETE USING (auth.uid() = user_id);
+
+-- Create indexes for performance
+CREATE INDEX idx_analyses_user_id ON analyses(user_id);
+CREATE INDEX idx_analyses_session_id ON analyses(session_id);
+CREATE INDEX idx_analyses_is_public ON analyses(is_public);
+CREATE INDEX idx_analyses_created_at ON analyses(created_at DESC);
+
+-- User preferences/settings table (optional)
+CREATE TABLE user_settings (
+    user_id UUID REFERENCES auth.users(id) PRIMARY KEY,
+    preferences JSONB DEFAULT '{}',
+    subscription_tier TEXT DEFAULT 'free',
+    api_usage_count INTEGER DEFAULT 0,
+    monthly_usage_limit INTEGER DEFAULT 10,
+    usage_reset_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE user_settings ENABLE ROW LEVEL SECURITY;
+
+-- Users can only access their own settings
+CREATE POLICY "Users can manage own settings" ON user_settings
+    FOR ALL USING (auth.uid() = user_id);
+
+-- Function to automatically create user settings on first analysis
+CREATE OR REPLACE FUNCTION create_user_settings()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO user_settings (user_id)
+    VALUES (NEW.user_id)
+    ON CONFLICT (user_id) DO NOTHING;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to create settings when user creates first analysis
+CREATE TRIGGER create_user_settings_trigger
+    AFTER INSERT ON analyses
+    FOR EACH ROW
+    EXECUTE FUNCTION create_user_settings();
+```
+
+#### Updated API Endpoints
+
+Update your main FastAPI application:
 
 ```python
-# Example backend changes (if using FastAPI)
-from supabase import create_client, Client
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form
+from fastapi.middleware.cors import CORSMiddleware
+from middleware.auth import get_current_user, get_optional_user, User
+from models.analysis import AnalysisModel
+import uuid
+from datetime import datetime
+from typing import Optional
 
-# Add to your backend endpoints
+app = FastAPI(title="LLEO Analysis API")
+
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "https://your-frontend-domain.com"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.post("/analyze")
 async def submit_analysis(
-    prompt: str,
-    user_id: str,
-    user_email: str,
-    credentials: Optional[UploadFile] = None
+    query: str = Form(...),
+    credentials_file: UploadFile = File(...),
+    user: User = Depends(get_current_user)
 ):
-    # Store analysis with user_id and user_email
-    session_data = {
-        'user_id': user_id,
-        'user_email': user_email,
-        'prompt': prompt,
-        'session_id': str(uuid.uuid4()),
-        'created_at': datetime.utcnow().isoformat()
-    }
+    """Submit analysis request - requires authentication"""
+    try:
+        # Generate unique session ID
+        session_id = str(uuid.uuid4())
 
-    # Your analysis logic here
-    return session_data
+        # Your existing analysis logic here
+        # ... process credentials_file, run analysis, etc.
+
+        # Example analysis result
+        analysis_result = {
+            "session_id": session_id,
+            "query": query,
+            "user_id": user.id,
+            "user_email": user.email,
+            "status": "completed",
+            "results": {
+                "thumbnail_url": f"/results/{session_id}/preview",
+                "download_url": f"/results/{session_id}/download",
+                "map_url": f"/results/{session_id}/map",
+                "chart_url": f"/results/{session_id}/chart"
+            }
+        }
+
+        # Save to database
+        saved_analysis = await AnalysisModel.create_analysis(
+            user_id=user.id,
+            user_email=user.email,
+            query=query,
+            session_id=session_id,
+            analysis_data=analysis_result
+        )
+
+        return analysis_result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
 @app.get("/gallery/{user_id}")
-async def get_user_gallery(user_id: str):
-    # Return only analyses belonging to this user
-    analyses = get_analyses_by_user_id(user_id)
+async def get_user_gallery(
+    user_id: str,
+    limit: int = 50,
+    offset: int = 0,
+    current_user: User = Depends(get_current_user)
+):
+    """Get user's analysis gallery - must be authenticated and accessing own gallery"""
+    if current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    analyses = await AnalysisModel.get_user_analyses(user_id, limit, offset)
     return analyses
+
+@app.get("/gallery/community")
+async def get_community_gallery(
+    limit: int = 50,
+    offset: int = 0,
+    user: Optional[User] = Depends(get_optional_user)
+):
+    """Get public community analyses - authentication optional"""
+    analyses = await AnalysisModel.get_public_analyses(limit, offset)
+    return analyses
+
+@app.get("/results/{session_id}/metadata")
+async def get_analysis_metadata(
+    session_id: str,
+    user: Optional[User] = Depends(get_optional_user)
+):
+    """Get analysis metadata"""
+    user_id = user.id if user else None
+    analysis = await AnalysisModel.get_analysis_by_session_id(session_id, user_id)
+
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Analysis not found")
+
+    return analysis
+
+@app.put("/results/{session_id}/visibility")
+async def update_analysis_visibility(
+    session_id: str,
+    is_public: bool,
+    user: User = Depends(get_current_user)
+):
+    """Make analysis public or private"""
+    success = await AnalysisModel.update_analysis_visibility(session_id, user.id, is_public)
+
+    if not success:
+        raise HTTPException(status_code=404, detail="Analysis not found or access denied")
+
+    return {"status": "success", "is_public": is_public}
+
+@app.delete("/results/{session_id}")
+async def delete_analysis(
+    session_id: str,
+    user: User = Depends(get_current_user)
+):
+    """Delete analysis - user must own it"""
+    success = await AnalysisModel.delete_analysis(session_id, user.id)
+
+    if not success:
+        raise HTTPException(status_code=404, detail="Analysis not found or access denied")
+
+    return {"status": "deleted"}
+
+@app.get("/user/profile")
+async def get_user_profile(user: User = Depends(get_current_user)):
+    """Get current user's profile"""
+    return {
+        "id": user.id,
+        "email": user.email,
+        "metadata": user.user_metadata
+    }
+
+@app.get("/user/usage")
+async def get_user_usage(user: User = Depends(get_current_user)):
+    """Get user's API usage statistics"""
+    # Query user_settings table for usage info
+    result = supabase_admin.table("user_settings") \
+        .select("*") \
+        .eq("user_id", user.id) \
+        .execute()
+
+    if result.data:
+        settings = result.data[0]
+        return {
+            "api_usage_count": settings.get("api_usage_count", 0),
+            "monthly_limit": settings.get("monthly_usage_limit", 10),
+            "subscription_tier": settings.get("subscription_tier", "free"),
+            "usage_reset_date": settings.get("usage_reset_date")
+        }
+
+    return {
+        "api_usage_count": 0,
+        "monthly_limit": 10,
+        "subscription_tier": "free"
+    }
 ```
 
 ## Benefits of This Implementation
@@ -581,20 +1002,316 @@ async def get_user_gallery(user_id: str):
 4. **User Management**: Built-in user registration, password reset, etc.
 5. **Scalable**: Easy to add features like user profiles, subscriptions
 6. **Analytics**: Track user behavior and usage patterns
+7. **Row Level Security**: Database-level security ensures data isolation
+8. **Real-time Features**: Supabase supports real-time subscriptions for live updates
 
-## Migration Strategy
+## Deployment Strategy
 
-1. **Phase 1**: Implement authentication alongside existing localStorage system
-2. **Phase 2**: Migrate existing localStorage data to authenticated users
-3. **Phase 3**: Remove localStorage fallback and require authentication
+### Frontend Deployment (Vercel/Netlify)
 
-## Additional Features to Consider
+1. **Environment Variables**: Add Supabase credentials to your deployment platform
+2. **Domain Configuration**: Update CORS origins in both Supabase and FastAPI
+3. **Build Process**: Ensure all environment variables are available at build time
 
-1. **Social Authentication**: Google, GitHub, etc.
-2. **User Profiles**: Additional user metadata and preferences
-3. **Subscription Management**: Integration with payment providers
-4. **Team/Organization Support**: Shared analyses and collaboration
-5. **API Keys**: For programmatic access
-6. **Admin Dashboard**: User management and analytics
+### Backend Deployment (GCP Cloud Run)
 
-This implementation will provide a robust, scalable authentication system that enhances user experience while maintaining security best practices.
+1. **Environment Variables**: Add Supabase credentials to Cloud Run configuration
+2. **Database Connection**: Ensure Cloud Run can access Supabase (should be automatic)
+3. **Service Account**: May need additional permissions for Supabase integration
+
+### Supabase Configuration
+
+1. **Authentication Settings**: Configure email templates, OAuth providers if needed
+2. **URL Configuration**: Add your frontend and backend URLs to allowed origins
+3. **RLS Policies**: Test policies thoroughly before production deployment
+4. **Backup Strategy**: Set up regular database backups
+
+## Migration Plan
+
+### Phase 1: Parallel Implementation (1-2 weeks)
+- Implement Supabase authentication alongside existing localStorage system
+- Add authentication components but keep them optional
+- Test authentication flow thoroughly
+- Create database schema and API endpoints
+
+### Phase 2: User Data Migration (1 week)
+- Create migration scripts to move localStorage data to authenticated users
+- Provide users with account creation prompts
+- Allow users to "claim" their existing analyses by creating accounts
+- Maintain backward compatibility during transition
+
+### Phase 3: Full Authentication (1 week)
+- Make authentication required for new analyses
+- Gradually deprecate localStorage system
+- Provide clear migration path for remaining users
+- Remove localStorage fallback code
+
+### Migration Code Example
+
+Create `frontend/utils/migration.ts`:
+```typescript
+import { supabase } from '@/lib/supabase'
+import { getUserId, clearUserData } from './api'
+
+export async function migrateLocalStorageData() {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+
+  // Get localStorage data
+  const oldUserId = getUserId()
+  const localAnalyses = localStorage.getItem(`analyses_${oldUserId}`)
+
+  if (localAnalyses) {
+    try {
+      const analyses = JSON.parse(localAnalyses)
+
+      // Migrate each analysis to the authenticated user
+      for (const analysis of analyses) {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/migrate-analysis`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            old_user_id: oldUserId,
+            analysis_data: analysis,
+            new_user_id: user.id
+          })
+        })
+      }
+
+      // Clear old data after successful migration
+      clearUserData()
+
+    } catch (error) {
+      console.error('Migration failed:', error)
+    }
+  }
+}
+```
+
+## Advanced Features
+
+### 1. Social Authentication
+
+Add OAuth providers to Supabase dashboard and update AuthModal:
+
+```typescript
+// Add to AuthModal component
+import { Auth } from '@supabase/auth-ui-react'
+import { ThemeSupa } from '@supabase/auth-ui-shared'
+
+<Auth
+  supabaseClient={supabase}
+  appearance={{ theme: ThemeSupa }}
+  providers={['google', 'github']}
+  redirectTo={window.location.origin}
+/>
+```
+
+### 2. Subscription Management
+
+Integrate with Stripe for payments:
+
+```typescript
+// Add to database schema
+CREATE TABLE subscriptions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id),
+  stripe_customer_id TEXT,
+  stripe_subscription_id TEXT,
+  status TEXT,
+  price_id TEXT,
+  current_period_end TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
+
+### 3. Team Collaboration
+
+Add organization support:
+
+```sql
+-- Organizations table
+CREATE TABLE organizations (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  owner_id UUID REFERENCES auth.users(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Organization members
+CREATE TABLE organization_members (
+  organization_id UUID REFERENCES organizations(id),
+  user_id UUID REFERENCES auth.users(id),
+  role TEXT DEFAULT 'member',
+  joined_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  PRIMARY KEY (organization_id, user_id)
+);
+```
+
+### 4. API Keys for Programmatic Access
+
+```sql
+-- API keys table
+CREATE TABLE api_keys (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id),
+  name TEXT NOT NULL,
+  key_hash TEXT NOT NULL,
+  key_prefix TEXT NOT NULL,
+  last_used_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  expires_at TIMESTAMP WITH TIME ZONE
+);
+```
+
+### 5. Admin Dashboard
+
+Create admin-only routes and components:
+
+```typescript
+// Check if user is admin
+const isAdmin = user?.user_metadata?.role === 'admin'
+
+// Admin-only API endpoints
+@app.get("/admin/users")
+async def get_all_users(user: User = Depends(get_admin_user)):
+    # Return user statistics and management
+```
+
+### 6. Real-time Features
+
+Add real-time analysis updates:
+
+```typescript
+// Subscribe to analysis updates
+useEffect(() => {
+  if (!user) return
+
+  const channel = supabase
+    .channel('analyses')
+    .on('postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'analyses',
+        filter: `user_id=eq.${user.id}`
+      },
+      (payload) => {
+        // Update UI when analysis status changes
+        console.log('Analysis updated:', payload)
+      }
+    )
+    .subscribe()
+
+  return () => {
+    supabase.removeChannel(channel)
+  }
+}, [user])
+```
+
+## Security Considerations
+
+### 1. Environment Variables Security
+- Never expose service role keys in frontend
+- Use different keys for development and production
+- Rotate keys regularly
+
+### 2. Row Level Security Best Practices
+- Test all RLS policies thoroughly
+- Use principle of least privilege
+- Audit access patterns regularly
+
+### 3. API Security
+- Implement rate limiting
+- Validate all inputs
+- Use HTTPS everywhere
+- Monitor for suspicious activity
+
+### 4. Data Protection
+- Encrypt sensitive data at rest
+- Implement proper data retention policies
+- Provide user data export/deletion tools
+- Comply with GDPR/CCPA requirements
+
+## Monitoring and Analytics
+
+### 1. User Analytics
+```typescript
+// Track user actions
+const trackEvent = (event: string, properties: any) => {
+  if (user) {
+    supabase.from('user_events').insert({
+      user_id: user.id,
+      event_name: event,
+      properties,
+      timestamp: new Date().toISOString()
+    })
+  }
+}
+```
+
+### 2. Performance Monitoring
+- Monitor authentication latency
+- Track API response times
+- Set up alerts for failed authentications
+- Monitor database query performance
+
+### 3. Error Tracking
+```typescript
+// Enhanced error handling with user context
+const handleError = (error: Error) => {
+  console.error('Application error:', error)
+
+  // Send to error tracking service with user context
+  errorTrackingService.captureException(error, {
+    user: user ? { id: user.id, email: user.email } : null,
+    tags: { component: 'authentication' }
+  })
+}
+```
+
+## Testing Strategy
+
+### 1. Authentication Flow Tests
+```typescript
+describe('Authentication', () => {
+  it('should sign up new users', async () => {
+    const { error } = await supabase.auth.signUp({
+      email: 'test@example.com',
+      password: 'testpassword'
+    })
+    expect(error).toBeNull()
+  })
+
+  it('should protect authenticated routes', async () => {
+    // Test that unauthenticated users can't access protected content
+  })
+})
+```
+
+### 2. Database Policy Tests
+```sql
+-- Test RLS policies
+SELECT * FROM analyses WHERE user_id != auth.uid(); -- Should return no rows
+```
+
+### 3. Integration Tests
+- Test complete user journey from signup to analysis creation
+- Test migration from localStorage to authenticated system
+- Test error handling and edge cases
+
+## Conclusion
+
+This comprehensive Supabase integration will transform your LLEO platform into a professional, scalable application with proper user management, security, and data persistence. The phased migration approach ensures minimal disruption to existing users while providing a clear path to a more robust system.
+
+Key benefits include:
+- **Professional Authentication**: Industry-standard security practices
+- **Scalable Architecture**: Ready for growth and additional features
+- **Better User Experience**: Persistent sessions and cross-device access
+- **Data Security**: Database-level security with Row Level Security
+- **Future-Ready**: Foundation for subscriptions, teams, and advanced features
+
+The implementation provides immediate value while establishing a foundation for future enhancements like team collaboration, API access, and advanced analytics.

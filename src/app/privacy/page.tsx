@@ -7,7 +7,7 @@ import Footer from '@/components/layout/Footer';
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-amber-50 to-orange-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-orange-50">
       <Header />
 
       <main className="container mx-auto px-6 py-16">
@@ -15,10 +15,10 @@ export default function PrivacyPolicyPage() {
           {/* Header */}
           <div className="text-center mb-12">
             <div className="flex items-center justify-center space-x-3 mb-6">
-              <div className="w-12 h-12 bg-gradient-to-r from-green-400 to-amber-500 rounded-xl flex items-center justify-center">
+              <div className="w-12 h-12 bg-gradient-to-r from-[#43978D] to-[#F9AD6A] rounded-xl flex items-center justify-center">
                 <Shield className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-amber-600 bg-clip-text text-transparent">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-[#264D59] to-[#D46C4E] bg-clip-text text-transparent">
                 Privacy Policy
               </h1>
             </div>

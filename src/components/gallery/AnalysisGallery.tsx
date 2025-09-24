@@ -213,7 +213,7 @@ const AnalysisGallery: React.FC<AnalysisGalleryProps> = ({
     return (
       <div className={cn('space-y-6', className)}>
         <Card className="text-center py-16">
-          <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-amber-500 rounded-full flex items-center justify-center mx-auto mb-6">
+          <div className="w-16 h-16 bg-gradient-to-br from-[#43978D] to-[#F9AD6A] rounded-full flex items-center justify-center mx-auto mb-6">
             <LoadingSpinner size="lg" className="text-white" />
           </div>
           <h3 className="text-xl font-bold text-black mb-2">Loading Your Analyses</h3>
@@ -229,7 +229,7 @@ const AnalysisGallery: React.FC<AnalysisGalleryProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <div className="flex items-center space-x-3 mb-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-amber-500 rounded-xl flex items-center justify-center shadow-lg">
+            <div className="w-10 h-10 bg-gradient-to-br from-[#43978D] to-[#F9AD6A] rounded-xl flex items-center justify-center shadow-lg">
               <BarChart3 className="w-5 h-5 text-white" />
             </div>
             <h2 className="text-3xl font-bold text-slate-900">{title}</h2>
@@ -465,7 +465,7 @@ const AnalysisGallery: React.FC<AnalysisGalleryProps> = ({
 
           {/* Load more hint (for future pagination) */}
           {filteredAndSortedAnalyses.length >= 20 && (
-            <Card className="text-center py-8 bg-gradient-to-r from-green-50 to-amber-50 border-green-200">
+            <Card className="text-center py-8 bg-gradient-to-r from-slate-50 to-orange-50 border-[#43978D]/30">
               <p className="text-slate-600 mb-4">
                 Showing {filteredAndSortedAnalyses.length} analyses
               </p>

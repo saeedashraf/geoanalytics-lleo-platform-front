@@ -466,7 +466,7 @@ function HomePageContent() {
         {/* Pro Plan */}
         <Card className="text-center relative border-2 border-green-500" padding="lg">
           <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-            <span className="bg-gradient-to-r from-green-400 to-amber-500 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+            <span className="bg-gradient-to-r from-[#43978D] to-[#F9AD6A] text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
               Most Popular
             </span>
           </div>
@@ -506,7 +506,7 @@ function HomePageContent() {
           <Button
             variant="primary"
             fullWidth
-            className="!bg-gradient-to-r !from-green-500 !to-green-500 hover:!from-green-600 hover:!to-green-600"
+            className="!bg-gradient-to-r !from-[#43978D] !to-[#43978D] hover:!from-[#264D59] hover:!to-[#264D59]"
           >
             Start Pro Trial
           </Button>
@@ -564,10 +564,10 @@ function HomePageContent() {
               <div className="text-center max-w-4xl mx-auto mb-16">
                 {/* LLEO Logo/Title */}
                 <div className="flex items-center justify-center space-x-4 mb-6">
-                  <div className="w-16 h-16 bg-gradient-to-r from-green-400 to-amber-500 rounded-2xl flex items-center justify-center">
+                  <div className="w-16 h-16 bg-gradient-to-r from-[#43978D] to-[#F9AD6A] rounded-2xl flex items-center justify-center">
                     <Satellite className="w-8 h-8 text-white" />
                   </div>
-                  <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-green-500 to-amber-500 bg-clip-text text-transparent">
+                  <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-[#264D59] to-[#D46C4E] bg-clip-text text-transparent">
                     LLEO
                   </h1>
                 </div>
@@ -602,20 +602,11 @@ function HomePageContent() {
             </div>
 
             {/* Resources Section (smaller/simplified) */}
-            <div className="bg-gradient-to-r from-green-100/50 to-amber-100/50 backdrop-blur-sm py-16">
+            <div className="bg-gradient-to-r from-slate-100/30 to-orange-100/30 backdrop-blur-sm py-16">
               <div className="container mx-auto px-6">
-                <div className="text-center mb-12">
-                  <h2 className="text-3xl font-bold text-black mb-4">
-                    Powered by Advanced Technology
-                  </h2>
-                  <p className="text-gray-800 max-w-2xl mx-auto">
-                    Built on Google Earth Engine with state-of-the-art AI models for comprehensive geospatial analysis.
-                  </p>
-                </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
                   <div className="text-center">
-                    <div className="w-12 h-12 bg-gradient-to-r from-green-400 to-amber-500 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-[#43978D] to-[#F9AD6A] rounded-xl flex items-center justify-center mx-auto mb-4">
                       <Brain className="w-6 h-6 text-white" />
                     </div>
                     <h3 className="text-lg font-semibold text-black mb-2">AI-Powered</h3>
@@ -623,7 +614,7 @@ function HomePageContent() {
                   </div>
 
                   <div className="text-center">
-                    <div className="w-12 h-12 bg-gradient-to-r from-green-400 to-amber-500 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-[#43978D] to-[#F9AD6A] rounded-xl flex items-center justify-center mx-auto mb-4">
                       <Globe className="w-6 h-6 text-white" />
                     </div>
                     <h3 className="text-lg font-semibold text-black mb-2">Global Coverage</h3>
@@ -631,7 +622,7 @@ function HomePageContent() {
                   </div>
 
                   <div className="text-center">
-                    <div className="w-12 h-12 bg-gradient-to-r from-green-400 to-amber-500 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-[#43978D] to-[#F9AD6A] rounded-xl flex items-center justify-center mx-auto mb-4">
                       <Share2 className="w-6 h-6 text-white" />
                     </div>
                     <h3 className="text-lg font-semibold text-black mb-2">Research Sharing</h3>
@@ -681,7 +672,7 @@ function HomePageContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-amber-50 to-orange-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-orange-50">
       {/* Header */}
       <Header
         activeTab={activeTab}
@@ -781,7 +772,7 @@ function HomePageContent() {
 // Main export with Suspense boundary for useSearchParams
 export default function HomePage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-green-50 via-amber-50 to-orange-50 flex items-center justify-center">Loading...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-orange-50 flex items-center justify-center">Loading...</div>}>
       <HomePageContent />
     </Suspense>
   );

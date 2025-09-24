@@ -159,7 +159,7 @@ const AnalysisCard: React.FC<AnalysisCardProps> = ({
           </>
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center">
-            <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-amber-500 rounded-full flex items-center justify-center mb-3 shadow-lg">
+            <div className="w-16 h-16 bg-gradient-to-br from-[#43978D] to-[#F9AD6A] rounded-full flex items-center justify-center mb-3 shadow-lg">
               <MapPin className="w-8 h-8 text-white" />
             </div>
             <p className="text-slate-600 font-medium">{analysis.location_name}</p>
@@ -410,7 +410,7 @@ const AnalysisCard: React.FC<AnalysisCardProps> = ({
       </div>
 
       {/* Hover effect overlay */}
-      <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 via-amber-500/5 to-green-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-r from-[#43978D]/5 via-[#F9AD6A]/5 to-[#43978D]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
     </Card>
   );
 };

@@ -61,10 +61,10 @@ const examplePrompts: ExamplePrompt[] = [
 ];
 
 const categoryColors = {
-  environmental: 'from-green-400 to-amber-500 border-green-200',
-  urban: 'from-green-400 to-amber-500 border-green-200',
-  weather: 'from-green-400 to-amber-500 border-green-200',
-  risk: 'from-green-400 to-amber-500 border-green-200'
+  environmental: 'from-[#43978D] to-[#F9AD6A] border-[#43978D]/30',
+  urban: 'from-[#43978D] to-[#F9AD6A] border-[#43978D]/30',
+  weather: 'from-[#43978D] to-[#F9AD6A] border-[#43978D]/30',
+  risk: 'from-[#43978D] to-[#F9AD6A] border-[#43978D]/30'
 };
 
 const categoryHoverColors = {
@@ -80,8 +80,8 @@ export default function ExamplePrompts({ onPromptClick, disabled = false }: Exam
       {/* Header */}
       <div className="text-center mb-8">
         <div className="flex items-center justify-center space-x-3 mb-4">
-          <Sparkles className="h-6 w-6 text-amber-500" />
-          <h3 className="text-2xl font-bold bg-gradient-to-r from-green-600 to-amber-600 bg-clip-text text-transparent">
+          <Sparkles className="h-6 w-6 text-[#F9AD6A]" />
+          <h3 className="text-2xl font-bold bg-gradient-to-r from-[#264D59] to-[#D46C4E] bg-clip-text text-transparent">
             Try these examples
           </h3>
         </div>
