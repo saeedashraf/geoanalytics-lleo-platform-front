@@ -227,20 +227,15 @@ const AnalysisGallery: React.FC<AnalysisGalleryProps> = ({
     <div className={cn('space-y-6', className)}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center space-x-3 mb-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#43978D] to-[#F9AD6A] rounded-xl flex items-center justify-center shadow-lg">
-              <BarChart3 className="w-5 h-5 text-white" />
-            </div>
-            <h2 className="text-3xl font-bold text-slate-900">{title}</h2>
-          </div>
+        <div className="text-center">
+          <h2 className="text-3xl font-bold text-slate-900 mb-2">{title}</h2>
           {description && (
-            <p className="text-slate-600 mb-3">{description}</p>
+            <p className="text-slate-600 mb-4">{description}</p>
           )}
-          <div className="flex items-center space-x-4 text-sm text-slate-500">
+          <div className="flex items-center justify-center space-x-4 text-sm text-slate-500">
             <span>{filteredAndSortedAnalyses.length} of {analyses.length} analyses</span>
             {filteredAndSortedAnalyses.length !== analyses.length && (
-              <span className="text-green-600 font-medium">• Filtered</span>
+              <span className="text-[#43978D] font-medium">• Filtered</span>
             )}
           </div>
         </div>

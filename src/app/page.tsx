@@ -639,7 +639,7 @@ function HomePageContent() {
           <AnalysisGallery
             analyses={userAnalyses}
             title="My Analyses"
-            description="Your personal NDVI analysis history and research projects"
+            description="Your personal analysis history and research projects"
             loading={loadingGallery}
             onAnalysisView={handleAnalysisView}
             onAnalysisLike={handleAnalysisLike}
