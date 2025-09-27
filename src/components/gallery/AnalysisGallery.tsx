@@ -226,7 +226,7 @@ const AnalysisGallery: React.FC<AnalysisGalleryProps> = ({
   return (
     <div className={cn('space-y-6', className)}>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+      <div className="space-y-6">
         <div className="text-center">
           <h2 className="text-3xl font-bold text-slate-900 mb-2">{title}</h2>
           {description && (
@@ -239,9 +239,9 @@ const AnalysisGallery: React.FC<AnalysisGalleryProps> = ({
             )}
           </div>
         </div>
-        
-        <div className="flex items-center space-x-2 shrink-0">
-          {onRefresh && (
+
+        {onRefresh && (
+          <div className="flex justify-center">
             <Button
               variant="ghost"
               size="sm"
@@ -251,8 +251,8 @@ const AnalysisGallery: React.FC<AnalysisGalleryProps> = ({
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh
             </Button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Search and Filter Bar */}
